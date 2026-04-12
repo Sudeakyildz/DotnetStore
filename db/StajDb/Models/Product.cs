@@ -13,21 +13,22 @@ public class Product
 
     public int Stock { get; set; }
 
-    // Staj: active | inactive | draft
-    public string Status { get; set; } = "active";
+    public ProductStatus Status { get; set; } = ProductStatus.Active;
 
     public string? ImageUrl { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    // Audit
-    public string? CreatedBy { get; set; }
+    public int? CreatedByUserId { get; set; }
+    public StoreUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+
+    public int? UpdatedByUserId { get; set; }
+    public StoreUser? UpdatedByUser { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 
-    // Navigation (EAV / fiyat geçmişi)
     public ICollection<ProductFeatureValue> FeatureValues { get; set; } = new List<ProductFeatureValue>();
     public ICollection<ProductPrice> Prices { get; set; } = new List<ProductPrice>();
 }
-

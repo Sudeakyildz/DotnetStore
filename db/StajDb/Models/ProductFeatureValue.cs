@@ -12,10 +12,13 @@ public class ProductFeatureValue
 
     public string Value { get; set; } = null!;
 
-    // Audit
-    public string? CreatedBy { get; set; }
+    public int? CreatedByUserId { get; set; }
+    public StoreUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+
+    public int? UpdatedByUserId { get; set; }
+    public StoreUser? UpdatedByUser { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }
-

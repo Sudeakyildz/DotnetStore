@@ -8,21 +8,21 @@ public class Category
 
     public string? Description { get; set; }
 
-    // Admin ekranda kategori görseli için kullanılabilir.
     public string? ImageUrl { get; set; }
 
-    // Menü/route için slug (opsiyonel ama pratik).
     public string? Slug { get; set; }
 
-    // Staj: soft delete
     public bool IsDeleted { get; set; }
 
-    // Audit
-    public string? CreatedBy { get; set; }
+    public int? CreatedByUserId { get; set; }
+    public StoreUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+
+    public int? UpdatedByUserId { get; set; }
+    public StoreUser? UpdatedByUser { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 
     public ICollection<Product> Products { get; set; } = new List<Product>();
 }
-

@@ -6,17 +6,19 @@ public class Feature
 
     public string Name { get; set; } = null!;
 
-    // Basitçe string olarak tutuyoruz; ileride datatype üzerinden validasyon yapılabilir.
-    public string? DataType { get; set; }
+    public FeatureDataType DataType { get; set; } = FeatureDataType.String;
 
     public bool IsDeleted { get; set; }
 
-    // Audit
-    public string? CreatedBy { get; set; }
+    public int? CreatedByUserId { get; set; }
+    public StoreUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+
+    public int? UpdatedByUserId { get; set; }
+    public StoreUser? UpdatedByUser { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 
     public ICollection<ProductFeatureValue> Values { get; set; } = new List<ProductFeatureValue>();
 }
-

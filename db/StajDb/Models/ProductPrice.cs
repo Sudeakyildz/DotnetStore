@@ -9,16 +9,18 @@ public class ProductPrice
 
     public decimal Price { get; set; }
 
-    // Staj: referans fiyat/indirim mantığı
     public bool IsDiscount { get; set; }
 
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 
-    // Audit
-    public string? CreatedBy { get; set; }
+    public int? CreatedByUserId { get; set; }
+    public StoreUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+
+    public int? UpdatedByUserId { get; set; }
+    public StoreUser? UpdatedByUser { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }
-
