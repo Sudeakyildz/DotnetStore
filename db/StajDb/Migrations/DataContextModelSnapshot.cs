@@ -33,8 +33,8 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -59,40 +59,20 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasFilter("[Slug] IS NOT NULL");
 
-                    b.ToTable("Categories", (string)null);
+                    b.HasIndex("UpdatedByUserId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            IsDeleted = false,
-                            Name = "Telefon",
-                            Slug = "telefon",
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            IsDeleted = false,
-                            Name = "Elektronik",
-                            Slug = "elektronik",
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        });
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("StajDb.Models.Feature", b =>
@@ -106,12 +86,11 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("DataType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int>("DataType")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -124,39 +103,19 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Features", (string)null);
+                    b.HasIndex("UpdatedByUserId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            DataType = "string",
-                            IsDeleted = false,
-                            Name = "Renk",
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            DataType = "string",
-                            IsDeleted = false,
-                            Name = "Depolama",
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        });
+                    b.ToTable("Features", (string)null);
                 });
 
             modelBuilder.Entity("StajDb.Models.Product", b =>
@@ -173,8 +132,8 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
@@ -192,10 +151,8 @@ namespace StajDb.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<int>("Stock")
                         .HasColumnType("int");
@@ -203,46 +160,18 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products", (string)null);
+                    b.HasIndex("CreatedByUserId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CategoryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            Description = "Örnek ürün.",
-                            ImageUrl = "watch-8.jpeg",
-                            IsDeleted = false,
-                            Name = "Apple Watch 8",
-                            Status = "active",
-                            Stock = 25,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CategoryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            Description = "Örnek ürün.",
-                            ImageUrl = "watch-9.jpeg",
-                            IsDeleted = false,
-                            Name = "Apple Watch 9",
-                            Status = "active",
-                            Stock = 10,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        });
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("StajDb.Models.ProductFeatureValue", b =>
@@ -256,8 +185,8 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<int>("FeatureId")
                         .HasColumnType("int");
@@ -268,8 +197,8 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Value")
                         .IsRequired()
@@ -278,58 +207,16 @@ namespace StajDb.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedByUserId");
+
                     b.HasIndex("FeatureId");
+
+                    b.HasIndex("UpdatedByUserId");
 
                     b.HasIndex("ProductId", "FeatureId")
                         .IsUnique();
 
                     b.ToTable("ProductFeatures", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            FeatureId = 1,
-                            ProductId = 1,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed",
-                            Value = "Siyah"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            FeatureId = 2,
-                            ProductId = 1,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed",
-                            Value = "41mm"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            FeatureId = 1,
-                            ProductId = 2,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed",
-                            Value = "Gümüş"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            FeatureId = 2,
-                            ProductId = 2,
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed",
-                            Value = "45mm"
-                        });
                 });
 
             modelBuilder.Entity("StajDb.Models.ProductPrice", b =>
@@ -343,8 +230,8 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
@@ -353,6 +240,7 @@ namespace StajDb.Migrations
                         .HasColumnType("bit");
 
                     b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductId")
@@ -364,42 +252,86 @@ namespace StajDb.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ProductId")
                         .IsUnique()
                         .HasFilter("[EndDate] IS NULL");
 
-                    b.ToTable("ProductPrices", (string)null);
+                    b.HasIndex("UpdatedByUserId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            IsDiscount = false,
-                            Price = 20000m,
-                            ProductId = 1,
-                            StartDate = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "seed",
-                            IsDiscount = false,
-                            Price = 30000m,
-                            ProductId = 2,
-                            StartDate = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedAt = new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "seed"
-                        });
+                    b.ToTable("ProductPrices", (string)null);
+                });
+
+            modelBuilder.Entity("StajDb.Models.StoreUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserName")
+                        .IsUnique();
+
+                    b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("StajDb.Models.Category", b =>
+                {
+                    b.HasOne("StajDb.Models.StoreUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("StajDb.Models.StoreUser", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("StajDb.Models.Feature", b =>
+                {
+                    b.HasOne("StajDb.Models.StoreUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("StajDb.Models.StoreUser", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("StajDb.Models.Product", b =>
@@ -410,11 +342,30 @@ namespace StajDb.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("StajDb.Models.StoreUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("StajDb.Models.StoreUser", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Category");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("StajDb.Models.ProductFeatureValue", b =>
                 {
+                    b.HasOne("StajDb.Models.StoreUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("StajDb.Models.Feature", "Feature")
                         .WithMany("Values")
                         .HasForeignKey("FeatureId")
@@ -427,20 +378,43 @@ namespace StajDb.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StajDb.Models.StoreUser", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Feature");
 
                     b.Navigation("Product");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("StajDb.Models.ProductPrice", b =>
                 {
+                    b.HasOne("StajDb.Models.StoreUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("StajDb.Models.Product", "Product")
                         .WithMany("Prices")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StajDb.Models.StoreUser", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Product");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("StajDb.Models.Category", b =>

@@ -3,16 +3,30 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace StajDb.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialStajDb : Migration
+    public partial class Initial_v2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
@@ -24,14 +38,24 @@ namespace StajDb.Migrations
                     ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedByUserId = table.Column<int>(type: "int", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Categories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Categories_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Categories_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -41,16 +65,26 @@ namespace StajDb.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    DataType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    DataType = table.Column<int>(type: "int", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedByUserId = table.Column<int>(type: "int", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Features", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Features_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Features_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -63,12 +97,12 @@ namespace StajDb.Migrations
                     Name = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     Stock = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedByUserId = table.Column<int>(type: "int", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -80,6 +114,16 @@ namespace StajDb.Migrations
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Products_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Products_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -91,9 +135,9 @@ namespace StajDb.Migrations
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     FeatureId = table.Column<int>(type: "int", nullable: false),
                     Value = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedByUserId = table.Column<int>(type: "int", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -111,6 +155,16 @@ namespace StajDb.Migrations
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductFeatures_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductFeatures_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -120,13 +174,13 @@ namespace StajDb.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ProductId = table.Column<int>(type: "int", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     IsDiscount = table.Column<bool>(type: "bit", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedByUserId = table.Column<int>(type: "int", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -138,54 +192,22 @@ namespace StajDb.Migrations
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductPrices_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductPrices_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
-            migrationBuilder.InsertData(
+            migrationBuilder.CreateIndex(
+                name: "IX_Categories_CreatedByUserId",
                 table: "Categories",
-                columns: new[] { "Id", "CreatedAt", "CreatedBy", "Description", "ImageUrl", "IsDeleted", "Name", "Slug", "UpdatedAt", "UpdatedBy" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", null, null, false, "Telefon", "telefon", new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" },
-                    { 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", null, null, false, "Elektronik", "elektronik", new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Features",
-                columns: new[] { "Id", "CreatedAt", "CreatedBy", "DataType", "IsDeleted", "Name", "UpdatedAt", "UpdatedBy" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "string", false, "Renk", new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" },
-                    { 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "string", false, "Depolama", new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Products",
-                columns: new[] { "Id", "CategoryId", "CreatedAt", "CreatedBy", "Description", "ImageUrl", "IsDeleted", "Name", "Status", "Stock", "UpdatedAt", "UpdatedBy" },
-                values: new object[,]
-                {
-                    { 1, 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "Örnek ürün.", "watch-8.jpeg", false, "Apple Watch 8", "active", 25, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" },
-                    { 2, 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "Örnek ürün.", "watch-9.jpeg", false, "Apple Watch 9", "active", 10, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "ProductFeatures",
-                columns: new[] { "Id", "CreatedAt", "CreatedBy", "FeatureId", "ProductId", "UpdatedAt", "UpdatedBy", "Value" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", 1, 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "Siyah" },
-                    { 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", 2, 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "41mm" },
-                    { 3, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", 1, 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "Gümüş" },
-                    { 4, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", 2, 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", "45mm" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "ProductPrices",
-                columns: new[] { "Id", "CreatedAt", "CreatedBy", "EndDate", "IsDiscount", "Price", "ProductId", "StartDate", "UpdatedAt", "UpdatedBy" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", null, false, 20000m, 1, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" },
-                    { 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed", null, false, 30000m, 2, new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 30, 12, 0, 0, 0, DateTimeKind.Utc), "seed" }
-                });
+                column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_Slug",
@@ -195,10 +217,30 @@ namespace StajDb.Migrations
                 filter: "[Slug] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Categories_UpdatedByUserId",
+                table: "Categories",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Features_CreatedByUserId",
+                table: "Features",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Features_Name",
                 table: "Features",
                 column: "Name",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Features_UpdatedByUserId",
+                table: "Features",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductFeatures_CreatedByUserId",
+                table: "ProductFeatures",
+                column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductFeatures_FeatureId",
@@ -212,6 +254,16 @@ namespace StajDb.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductFeatures_UpdatedByUserId",
+                table: "ProductFeatures",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPrices_CreatedByUserId",
+                table: "ProductPrices",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductPrices_ProductId",
                 table: "ProductPrices",
                 column: "ProductId",
@@ -219,9 +271,30 @@ namespace StajDb.Migrations
                 filter: "[EndDate] IS NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductPrices_UpdatedByUserId",
+                table: "ProductPrices",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
                 table: "Products",
                 column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Products_CreatedByUserId",
+                table: "Products",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Products_UpdatedByUserId",
+                table: "Products",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_UserName",
+                table: "Users",
+                column: "UserName",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -241,6 +314,9 @@ namespace StajDb.Migrations
 
             migrationBuilder.DropTable(
                 name: "Categories");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }
