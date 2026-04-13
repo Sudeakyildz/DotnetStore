@@ -1,38 +1,34 @@
-using DotnetStore.Api.DTOs;
+using DotnetStore.Api.DTOs.Auth;
+using DotnetStore.Api.Helpers;
+using DotnetStore.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DotnetStore.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous]
 public class AuthController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
+    private readonly IAuthService _auth;
 
-    public AuthController(IConfiguration configuration)
+    public AuthController(IAuthService auth)
     {
-        _configuration = configuration;
+        _auth = auth;
     }
 
-    /// <summary>Demo giriş. Frontend entegrasyonu için basit token döner (gerçek JWT değildir).</summary>
-    [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult Login([FromBody] LoginRequestDto body)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest body, CancellationToken ct)
     {
-        var expectedUser = _configuration["Auth:DemoUsername"];
-        var expectedPass = _configuration["Auth:DemoPassword"];
+        var r = await _auth.RegisterAsync(body, ct);
+        return r.ToActionResult(this, d => Ok(d));
+    }
 
-        if (string.IsNullOrEmpty(expectedUser) || string.IsNullOrEmpty(expectedPass))
-            return Problem("Sunucu yapılandırması eksik: Auth.");
-
-        if (!string.Equals(body.Username, expectedUser, StringComparison.Ordinal)
-            || !string.Equals(body.Password, expectedPass, StringComparison.Ordinal))
-            return Unauthorized(new { message = "Geçersiz kullanıcı adı veya şifre." });
-
-        var payload = $"demo|{body.Username}|{DateTime.UtcNow:O}";
-        var token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload));
-
-        return Ok(new LoginResponseDto(token, "Bearer", 86400));
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken ct)
+    {
+        var r = await _auth.LoginAsync(body, ct);
+        return r.ToActionResult(this, d => Ok(d));
     }
 }
