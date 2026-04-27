@@ -2,6 +2,39 @@ export type LoginResponse = {
   accessToken: string;
   tokenType: string;
   expiresInSeconds: number;
+  email: string;
+  userName: string;
+  role: string;
+};
+
+export type MeResponse = {
+  id: number;
+  email: string;
+  userName: string;
+  role: string;
+  firstLoginAt: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+};
+
+export type AuditLogListItemDto = {
+  id: number;
+  userEmail: string;
+  userName: string;
+  action: string;
+  details: string | null;
+  createdAtUtc: string;
+};
+
+export type UserListItemDto = {
+  id: number;
+  email: string;
+  userName: string;
+  role: string;
+  firstLoginAt: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CategoryDto = {
@@ -58,6 +91,44 @@ export type ProductDetailDto = {
   featureValues: ProductFeatureValueDto[];
   createdByUserId?: number | null;
   updatedByUserId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrderListItemDto = {
+  id: number;
+  customerUserId: number;
+  customerEmail: string | null;
+  customerName: string | null;
+  status: number;
+  statusLabel: string;
+  itemCount: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+  note: string | null;
+};
+
+export type OrderItemRowDto = {
+  productId: number;
+  productName: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+export type OrderDetailDto = {
+  id: number;
+  customerUserId: number;
+  customerEmail: string | null;
+  customerName: string | null;
+  status: number;
+  statusLabel: string;
+  note: string | null;
+  items: OrderItemRowDto[];
+  total: number;
+  createdByUserId: number | null;
+  updatedByUserId: number | null;
   createdAt: string;
   updatedAt: string;
 };

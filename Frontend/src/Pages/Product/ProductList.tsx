@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, readJson, parseErrorMessage } from '../../api/client';
+import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
+import { AuthRoles } from '../../lib/authRoles';
 import type { CategoryDto, ProductListItemDto } from '../../api/types';
 import { productStatusLabel } from '../../lib/productStatus';
 import { productImageSrc } from '../../lib/productImage';
@@ -8,6 +9,10 @@ import { productImageSrc } from '../../lib/productImage';
 type Filters = { q: string; categoryId: string; minPrice: string; maxPrice: string };
 
 const ProductList = () => {
+  const role = getStoredAuthProfile()?.role ?? '';
+  const canMutateProducts = role === AuthRoles.Admin;
+  const canUpdatePrice = role === AuthRoles.Admin || role === AuthRoles.StaffPrices;
+
   const [products, setProducts] = useState<ProductListItemDto[]>([]);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [q, setQ] = useState('');
@@ -87,9 +92,11 @@ const ProductList = () => {
     <div>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h1 className="page-title h3 mb-0">Ürün listesi &amp; arama</h1>
-        <Link to="/products/create" className="btn btn-primary">
-          Yeni ürün
-        </Link>
+        {canMutateProducts && (
+          <Link to="/products/create" className="btn btn-primary">
+            Yeni ürün
+          </Link>
+        )}
       </div>
 
       <div className="card filter-card mb-4">
@@ -205,17 +212,27 @@ const ProductList = () => {
                     <td>
                       {p.activePrice != null ? `${p.activePrice.toLocaleString('tr-TR')} ₺` : '—'}
                     </td>
-                    <td className="text-end">
+                    <td className="text-end text-nowrap">
+                      {canUpdatePrice && (
+                        <Link
+                          to={`/products/${p.id}/fiyat`}
+                          className="btn btn-sm btn-warning text-dark me-1"
+                        >
+                          Fiyat
+                        </Link>
+                      )}
                       <Link to={`/products/edit/${p.id}`} className="btn btn-sm btn-outline-secondary me-1">
                         Düzenle
                       </Link>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => void handleDelete(p.id, p.name)}
-                      >
-                        Sil
-                      </button>
+                      {canMutateProducts && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => void handleDelete(p.id, p.name)}
+                        >
+                          Sil
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, readJson, parseErrorMessage } from '../../api/client';
+import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
+import { AuthRoles } from '../../lib/authRoles';
 import type { FeatureDto } from '../../api/types';
 import { featureDataTypeLabel } from '../../lib/featureDataType';
 
 const FeatureList = () => {
+  const role = getStoredAuthProfile()?.role ?? '';
+  const canEdit = role === AuthRoles.Admin || role === AuthRoles.StaffFeatures;
+
   const [items, setItems] = useState<FeatureDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +56,11 @@ const FeatureList = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="h3 mb-0">Ürün özellikleri</h1>
-        <Link to="/features/create" className="btn btn-primary">
-          Yeni özellik
-        </Link>
+        {canEdit && (
+          <Link to="/features/create" className="btn btn-primary">
+            Yeni özellik
+          </Link>
+        )}
       </div>
       {error && <div className="alert alert-danger">{error}</div>}
       <div className="table-responsive card shadow-sm">
@@ -83,13 +89,15 @@ const FeatureList = () => {
                     <span className="badge text-bg-secondary">{featureDataTypeLabel(f.dataType)}</span>
                   </td>
                   <td className="text-end">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => void handleDelete(f.id, f.name)}
-                    >
-                      Sil
-                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => void handleDelete(f.id, f.name)}
+                      >
+                        Sil
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

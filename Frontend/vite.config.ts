@@ -11,11 +11,20 @@ export default defineConfig({
         target: 'http://127.0.0.1:5198',
         changeOrigin: true,
       },
+      // API `wwwroot/images/...` → VITE_API_BASE_URL yokken göreli `/images/...` çalışsın
+      '/images': {
+        target: 'http://127.0.0.1:5198',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
     proxy: {
       '/api': {
+        target: 'http://127.0.0.1:5198',
+        changeOrigin: true,
+      },
+      '/images': {
         target: 'http://127.0.0.1:5198',
         changeOrigin: true,
       },

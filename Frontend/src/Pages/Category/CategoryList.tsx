@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, readJson, parseErrorMessage } from '../../api/client';
+import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
+import { AuthRoles } from '../../lib/authRoles';
 import type { CategoryDto } from '../../api/types';
 
 const SWATCHES = [
@@ -16,6 +17,9 @@ function swatchForId(id: number) {
 }
 
 const CategoryList = () => {
+  const role = getStoredAuthProfile()?.role ?? '';
+  const canEdit = role === AuthRoles.Admin || role === AuthRoles.StaffCategories;
+
   const [items, setItems] = useState<CategoryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,9 +77,11 @@ const CategoryList = () => {
           <h1 className="page-title h4 mb-1">Ürün grupları</h1>
           <p className="text-muted small mb-0">Katalog hiyerarşinizi buradan yönetin.</p>
         </div>
-        <Link to="/categories/create" className="btn btn-admin-primary">
-          Yeni grup
-        </Link>
+        {canEdit && (
+          <Link to="/categories/create" className="btn btn-admin-primary">
+            Yeni grup
+          </Link>
+        )}
       </header>
 
       {error && <div className="alert alert-danger border-0 shadow-sm">{error}</div>}
@@ -144,16 +150,25 @@ const CategoryList = () => {
                         {new Date(c.createdAt).toLocaleString('tr-TR')}
                       </td>
                       <td className="text-end pe-4">
-                        <Link to={`/categories/edit/${c.id}`} className="btn btn-sm btn-outline-secondary btn-table-action me-1">
-                          Düzenle
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger btn-table-action"
-                          onClick={() => void handleDelete(c.id, c.name)}
-                        >
-                          Sil
-                        </button>
+                        {canEdit ? (
+                          <>
+                            <Link
+                              to={`/categories/edit/${c.id}`}
+                              className="btn btn-sm btn-outline-secondary btn-table-action me-1"
+                            >
+                              Düzenle
+                            </Link>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger btn-table-action"
+                              onClick={() => void handleDelete(c.id, c.name)}
+                            >
+                              Sil
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-muted small">Salt okunur</span>
+                        )}
                       </td>
                     </tr>
                   );

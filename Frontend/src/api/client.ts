@@ -1,4 +1,32 @@
 const TOKEN_KEY = 'auth_token';
+const AUTH_PROFILE_KEY = 'auth_profile';
+
+export type AuthProfile = {
+  email: string;
+  userName: string;
+  role: string;
+};
+
+export function setStoredAuthProfile(profile: AuthProfile | null): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    if (profile) sessionStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
+    else sessionStorage.removeItem(AUTH_PROFILE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getStoredAuthProfile(): AuthProfile | null {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(AUTH_PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthProfile;
+  } catch {
+    return null;
+  }
+}
 
 /** Oturum yalnızca sekme/pencere açıkken kalır; kapatınca token silinir (localStorage kalıcı değil). */
 let legacyLocalStorageCleared = false;
@@ -28,7 +56,10 @@ export function setStoredToken(token: string | null): void {
   if (typeof sessionStorage === 'undefined') return;
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    else {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(AUTH_PROFILE_KEY);
+    }
   } catch {
     /* quota / private mode */
   }
