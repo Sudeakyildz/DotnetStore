@@ -4,7 +4,7 @@ public enum ProductStatus
 {
     Active = 1,
     Inactive = 2,
-    Draft = 3,
+    Draft = 3,//Taslak ürün tam hazır değil
 }
 
 public enum FeatureDataType
