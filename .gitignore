@@ -1,3 +1,27 @@
 .vs/
+.idea/
+*.user
+*.suo
+
 **/bin/
 **/obj/
+**/out/
+
+# Frontend
+node_modules/
+Frontend/node_modules/
+Frontend/dist/
+*.tsbuildinfo
+
+# Gizli / yerel
+.env
+.env.local
+.env.*.local
+
+# Log
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
