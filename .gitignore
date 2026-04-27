@@ -17,6 +17,7 @@ Frontend/dist/
 .env
 .env.local
 .env.*.local
+backend/DotnetStore.Api/appsettings.Development.json
 
 # Log
 *.log
