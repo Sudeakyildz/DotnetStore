@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using StajDb;
 using StajDb.Models;
 
@@ -11,30 +12,17 @@ public static class DatabaseSeeder
     /// Yönetici yoksa oluşturur; ardından örnek kategori, özellik ve ürünleri <strong>eksikse</strong> ekler
     /// (mevcut veritabanında da çalışır — sadece ilk kurulumda değil).
     /// </summary>
-    public static async Task SeedAsync(DataContext db, CancellationToken ct = default)
+    public static async Task SeedAsync(DataContext db, IConfiguration configuration, CancellationToken ct = default)
     {
         var now = new DateTime(2026, 3, 30, 12, 0, 0, DateTimeKind.Utc);
         var hasher = new PasswordHasher<StoreUser>();
 
-        var admin = await db.Users.FirstOrDefaultAsync(u => u.UserName == "admin", ct);
-        if (admin is null)
-        {
-            admin = new StoreUser
-            {
-                UserName = "admin",
-                PasswordHash = "",
-                CreatedAt = now,
-                UpdatedAt = now,
-            };
-            admin.PasswordHash = hasher.HashPassword(admin, "admin123");
-            db.Users.Add(admin);
-            await db.SaveChangesAsync(ct);
-        }
+        await AlignLegacyAdminAsync(db, configuration, hasher, now, ct);
+        var adminId = await EnsureSeedUsersAsync(db, configuration, hasher, now, ct);
+        await EnsureMusteriDemoUsersAsync(db, hasher, now, ct);
 
-        var uid = admin.Id;
-
-        var catElektronik = await GetOrCreateCategoryAsync(db, uid, now, "Elektronik", "elektronik", "Akıllı saat, bilgisayar ve aksesuar.", ct);
-        var catGiyim = await GetOrCreateCategoryAsync(db, uid, now, "Giyim", "giyim", "Kadın, erkek ve çocuk giyim.", ct);
+        var catElektronik = await GetOrCreateCategoryAsync(db, adminId, now, "Elektronik", "elektronik", "Akıllı saat, bilgisayar ve aksesuar.", ct);
+        var catGiyim = await GetOrCreateCategoryAsync(db, adminId, now, "Giyim", "giyim", "Kadın, erkek ve çocuk giyim.", ct);
 
         var legacyTelefon = await db.Categories.FirstOrDefaultAsync(c => c.Slug == "telefon" && !c.IsDeleted, ct);
         if (legacyTelefon is not null)
@@ -45,53 +33,55 @@ public static class DatabaseSeeder
                     s => s
                         .SetProperty(p => p.CategoryId, catElektronik.Id)
                         .SetProperty(p => p.UpdatedAt, now)
-                        .SetProperty(p => p.UpdatedByUserId, uid),
+                        .SetProperty(p => p.UpdatedByUserId, adminId),
                     ct);
             legacyTelefon.IsDeleted = true;
             legacyTelefon.UpdatedAt = now;
-            legacyTelefon.UpdatedByUserId = uid;
+            legacyTelefon.UpdatedByUserId = adminId;
         }
 
-        var featRenk = await GetOrCreateFeatureAsync(db, uid, now, "Renk", FeatureDataType.String, ct);
-        var featDepolama = await GetOrCreateFeatureAsync(db, uid, now, "Depolama", FeatureDataType.String, ct);
-        var featBeden = await GetOrCreateFeatureAsync(db, uid, now, "Beden", FeatureDataType.String, ct);
+        var featRenk = await GetOrCreateFeatureAsync(db, adminId, now, "Renk", FeatureDataType.String, ct);
+        var featDepolama = await GetOrCreateFeatureAsync(db, adminId, now, "Depolama", FeatureDataType.String, ct);
+        var featBeden = await GetOrCreateFeatureAsync(db, adminId, now, "Beden", FeatureDataType.String, ct);
 
-        await EnsureProductMissingAsync(
-            db, uid, now,
-            "Apple Watch 8",
-            catElektronik, featRenk, featDepolama,
-            "Örnek ürün.",
-            25, 20000m,
-            "https://picsum.photos/seed/staj-watch-8/480/600",
-            ("Siyah", "41mm"),
-            ct);
+        await RetireNonWwwrootImageProductsAsync(db, adminId, now, ct);
 
-        await EnsureProductMissingAsync(
-            db, uid, now,
-            "Apple Watch 9",
-            catElektronik, featRenk, featDepolama,
-            "Örnek ürün.",
-            10, 30000m,
-            "https://picsum.photos/seed/staj-watch-9/480/600",
-            ("Gümüş", "45mm"),
-            ct);
-
+        // Yalnızca wwwroot/images altındaki dosyalara /images/... yolu
         var electronics = new[]
         {
-            ("Lenovo IdeaPad 5 Laptop", "Gri", "512 GB SSD", 18999m, 6, "https://picsum.photos/seed/staj-elec-01/480/600", "15,6 inç FHD, günlük ve ofis kullanımı."),
-            ("Logitech MX Master 3S Mouse", "Grafit", "—", 3299m, 22, "https://picsum.photos/seed/staj-elec-02/480/600", "Sessiz tıklama, çoklu cihaz eşlemesi."),
-            ("JBL Flip 6 Taşınabilir Hoparlör", "Mavi", "—", 3490m, 15, "https://picsum.photos/seed/staj-elec-03/480/600", "IP67 su geçirmez, 12 saat çalma."),
-            ("Samsung 25W USB-C Şarj Adaptörü", "Beyaz", "—", 449m, 40, "https://picsum.photos/seed/staj-elec-04/480/600", "Hızlı şarj, kompakt tasarım."),
-            ("TP-Link Archer AX53 Router", "Siyah", "—", 2199m, 11, "https://picsum.photos/seed/staj-elec-05/480/600", "Wi-Fi 6, çift bant, ev ofis."),
-            ("Anker PowerCore 20000 mAh", "Siyah", "—", 1199m, 28, "https://picsum.photos/seed/staj-elec-06/480/600", "USB-C ve USB-A çıkışları."),
-            ("Dell P2422H 24 inç Monitör", "Siyah", "—", 5499m, 9, "https://picsum.photos/seed/staj-elec-07/480/600", "IPS, Full HD, ayarlanabilir ayak."),
-            ("Logitech K380 Çoklu Cihaz Klavye", "Pembe", "—", 899m, 35, "https://picsum.photos/seed/staj-elec-08/480/600", "Kompakt, sessiz tuşlar, Bluetooth."),
+            (
+                "Apple iPhone 17 Pro Max 512 GB — Abis",
+                "Abis",
+                "512 GB",
+                99999m,
+                8,
+                "/images/iphone-17-pro-max-512.jpg",
+                "ProMotion teknolojisine sahip 6,9 inç ekran, A19 Pro çip, iPhone’da bugüne kadar en yüksek pil performansı, Pro Fusion kamera, Center Stage ön kamera; abis rengi titanyum kasa (Abis), premium vitrin ürünü."
+            ),
+            (
+                "Apple iPhone 17 Pro Max 512 GB — Gümüş",
+                "Gümüş",
+                "512 GB",
+                99999m,
+                6,
+                "/images/Iphone17ProMaxGUMUS.jpg",
+                "6,9 inç ProMotion, A19 Pro, gelişmiş pil yönetimi, Pro Fusion ve Center Stage. Gümüş tonu titanyum veya paslanmaz detay; günlük ve yoğun kullanıma uygun."
+            ),
+            (
+                "Apple iPhone 17 Pro Max 512 GB — Turuncu (Truncu)",
+                "Turuncu",
+                "512 GB",
+                99999m,
+                5,
+                "/images/Iphone17ProMaxTruncu.jpg",
+                "Aynı 512 GB iPhone 17 Pro Max ailesi; canlı turuncu tonu (görsel dosya adı Truncu), ProMotion, A19 Pro, Pro Fusion ve Center Stage ön kamera."
+            ),
         };
 
         foreach (var (name, color, storage, price, stock, imageUrl, desc) in electronics)
         {
             await EnsureProductMissingAsync(
-                db, uid, now,
+                db, adminId, now,
                 name,
                 catElektronik, featRenk, featDepolama,
                 desc,
@@ -103,15 +93,39 @@ public static class DatabaseSeeder
 
         var clothing = new[]
         {
-            ("Kadın Klasik Palto", "Bej", "M", 2499m, 12, "https://picsum.photos/seed/staj-giyim-01/480/600", "Yün karışımlı, cepli."),
-            ("Erkek Basic Tişört Paketi (3'lü)", "Beyaz", "L", 399m, 45, "https://picsum.photos/seed/staj-giyim-02/480/600", "%100 pamuk, regular fit."),
-            ("Çocuk Polar Mont", "Lacivert", "8 yaş", 599m, 20, "https://picsum.photos/seed/staj-giyim-03/480/600", "Hafif, yıkanabilir."),
+            (
+                "Erkek Basic Tişört",
+                "Beyaz",
+                "L",
+                399m,
+                48,
+                "/images/ErkekBeyazTshirt.jpg",
+                "Erkek cut basic beyaz tişört, günlük kombin. Yumuşak, nefes alan kumaş; sade, düz renk; büyük beden stoku ile uyum."
+            ),
+            (
+                "Kadın Basic Tişört",
+                "Beyaz",
+                "M",
+                389m,
+                40,
+                "/images/KadınBeyazTshirt.jpg",
+                "Kadın formuna uyumlu beyaz basic tişört, şık ve sade. İlkbahar-yaz gardırobuna uyumlu; hafif ve yıkama dayanımı yüksek."
+            ),
+            (
+                "Unisex Siyah Basic Tişört",
+                "Siyah",
+                "L",
+                429m,
+                52,
+                "/images/unisexSiyahTshirt.jpg",
+                "Kadın ve erkeğe uyan unisex siyah model; sade, oversize/rahat kalıp hissi, çok yönlü siyah. Günlük ve okul/iş dışı kombin."
+            ),
         };
 
         foreach (var (name, color, beden, price, stock, imageUrl, desc) in clothing)
         {
             await EnsureProductMissingAsync(
-                db, uid, now,
+                db, adminId, now,
                 name,
                 catGiyim, featRenk, featBeden,
                 desc,
@@ -122,6 +136,280 @@ public static class DatabaseSeeder
         }
 
         await db.SaveChangesAsync(ct);
+        await EnsureMusteriDemoOrdersForAdminPanelAsync(db, adminId, now, ct);
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task EnsureMusteriDemoUsersAsync(
+        DataContext db,
+        PasswordHasher<StoreUser> hasher,
+        DateTime now,
+        CancellationToken ct)
+    {
+        var demo = new[]
+        {
+            ("musteri.ayse@staj.local", "Ayşe T. (Müşteri)", "Musteri!12345"),
+            ("musteri.ali@staj.local", "Ali K. (Müşteri)", "Musteri!12345"),
+            ("musteri.zehra@staj.local", "Zehra M. (Müşteri)", "Musteri!12345"),
+        };
+        foreach (var (email, userName, pass) in demo)
+        {
+            var e = email.ToLowerInvariant();
+            if (await db.Users.AnyAsync(u => u.Email == e, ct))
+                continue;
+            var u = new StoreUser
+            {
+                UserName = userName,
+                Email = e,
+                Role = UserRole.Musteri,
+                PasswordHash = "",
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            u.PasswordHash = hasher.HashPassword(u, pass);
+            db.Users.Add(u);
+        }
+    }
+
+    private const string MusteriHareketiTag =
+        "Staj demoset 2026: müşteri hareketi (admin panel örnek)";
+
+    /// <summary>
+    /// Farklı durumlarda birkaç sipariş; tümü <see cref="UserRole.Musteri"/>. Aynı etiketle kayıt varsa tekrar ekleme.
+    /// Gelecekteki müşteri ekranı bu akışa bağlandığında satırlar/hareketler aynı modele eklenebilir.
+    /// </summary>
+    private static async Task EnsureMusteriDemoOrdersForAdminPanelAsync(
+        DataContext db,
+        int adminId,
+        DateTime now,
+        CancellationToken ct)
+    {
+        // StringComparison’lı Contains EF’de SQL’e çevrilmez; Like kullan.
+        if (await db.Orders.AnyAsync(
+                o => o.Note != null && EF.Functions.Like(o.Note, "%" + MusteriHareketiTag + "%"),
+                cancellationToken: ct))
+        {
+            return;
+        }
+
+        var ayse = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == "musteri.ayse@staj.local", cancellationToken: ct);
+        var ali = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == "musteri.ali@staj.local", cancellationToken: ct);
+        var zehra = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == "musteri.zehra@staj.local", cancellationToken: ct);
+        if (ayse is null || ali is null || zehra is null)
+            return;
+
+        var priceByName = await GetOpenUnitPriceByProductNameAsync(db, ct);
+        if (priceByName.Count < 2)
+            return;
+
+        // (müşteri, durum, not-ek, satırlar, saat-ofset)
+        var spec = new (int Cid, OrderStatus Status, string NotePart, (string P, int Q)[] Lines, double HoursAgo)[]
+        {
+            (ayse.Id, OrderStatus.BegeniyeEklendi, "Favori / beğenildi.", new[] { ("Apple iPhone 17 Pro Max 512 GB — Abis", 1) }, 52),
+            (ayse.Id, OrderStatus.Sepette, "Sepet (2 ürün).", new[]
+            {
+                ("Apple iPhone 17 Pro Max 512 GB — Gümüş", 1),
+                ("Erkek Basic Tişört", 2),
+            }, 48),
+            (ali.Id, OrderStatus.SiparisAlindi, "Ödeme/özet onayı (sipariş alındı).", new[] { ("Unisex Siyah Basic Tişört", 1) }, 36),
+            (ali.Id, OrderStatus.KargoyaVerildi, "Kargoya verildi.", new[]
+            {
+                ("Apple iPhone 17 Pro Max 512 GB — Turuncu (Truncu)", 1),
+            }, 24),
+            (zehra.Id, OrderStatus.TeslimEdildi, "Teslim edildi.", new[] { ("Kadın Basic Tişört", 2) }, 12),
+            (zehra.Id, OrderStatus.IptalEdildi, "Müşteri veya operasyon iptali (örnek).", new[]
+            {
+                ("Apple iPhone 17 Pro Max 512 GB — Gümüş", 1),
+            }, 6),
+        };
+
+        foreach (var (cid, st, part, lines, h) in spec)
+        {
+            var t = now.AddHours(-h);
+            var o = new Order
+            {
+                CustomerUserId = cid,
+                Status = st,
+                Note = MusteriHareketiTag + " " + part,
+                CreatedByUserId = adminId,
+                UpdatedByUserId = adminId,
+                CreatedAt = t,
+                UpdatedAt = t,
+            };
+            var any = false;
+            foreach (var (pName, qty) in lines)
+            {
+                if (!priceByName.TryGetValue(pName, out var up))
+                    continue;
+                o.Items.Add(new OrderItem
+                {
+                    ProductId = up.Id,
+                    Quantity = qty,
+                    UnitPrice = up.UnitPrice,
+                });
+                any = true;
+            }
+
+            if (any)
+                db.Orders.Add(o);
+        }
+    }
+
+    private sealed class UnitInfo
+    {
+        public int Id { get; init; }
+        public decimal UnitPrice { get; init; }
+    }
+
+    private static async Task<Dictionary<string, UnitInfo>> GetOpenUnitPriceByProductNameAsync(
+        DataContext db,
+        CancellationToken ct)
+    {
+        var list = await db.Products
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted)
+            .Select(p => new
+            {
+                p.Name,
+                p.Id,
+                Open = p.Prices
+                    .Where(pr => pr.EndDate == null)
+                    .Select(pr => (decimal?)pr.Price)
+                    .FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken: ct);
+
+        var d = new Dictionary<string, UnitInfo>(StringComparer.Ordinal);
+        foreach (var x in list)
+        {
+            if (x.Open is null || x.Open <= 0m)
+                continue;
+            d[x.Name] = new UnitInfo { Id = x.Id, UnitPrice = x.Open.Value };
+        }
+
+        return d;
+    }
+
+    /// <summary>
+    /// Yalnız <c>wwwroot</c>’tan <c>/images/...</c> yolu dışındaki tohum/dış URL görsellileri kaldırır (yumuşak siler).
+    /// </summary>
+    private static async Task RetireNonWwwrootImageProductsAsync(
+        DataContext db,
+        int adminId,
+        DateTime now,
+        CancellationToken ct)
+    {
+        // Renk ayrılmadan tek satır kalan iPhone; çift kayıt kalmasın
+        const string oldSingleIphone = "Apple iPhone 17 Pro Max 512 GB";
+        await db.Products
+            .Where(p => !p.IsDeleted && p.Name == oldSingleIphone)
+            .ExecuteUpdateAsync(
+                s => s
+                    .SetProperty(p => p.IsDeleted, true)
+                    .SetProperty(p => p.UpdatedAt, now)
+                    .SetProperty(p => p.UpdatedByUserId, adminId),
+                cancellationToken: ct);
+
+        // Picsum + http(s) dış linkler. StringComparison’lı Contains SQL’e çevrilmez; Like + tek argümanlı Contains.
+        await db.Products
+            .Where(
+                p => !p.IsDeleted
+                     && p.ImageUrl != null
+                     && p.ImageUrl != string.Empty
+                     && (EF.Functions.Like(p.ImageUrl, "%picsum%")
+                         || p.ImageUrl.Contains("://")))
+            .ExecuteUpdateAsync(
+                s => s
+                    .SetProperty(p => p.IsDeleted, true)
+                    .SetProperty(p => p.UpdatedAt, now)
+                    .SetProperty(p => p.UpdatedByUserId, adminId),
+                cancellationToken: ct);
+    }
+
+    private static async Task AlignLegacyAdminAsync(
+        DataContext db,
+        IConfiguration configuration,
+        PasswordHasher<StoreUser> hasher,
+        DateTime now,
+        CancellationToken ct)
+    {
+        var targetEmail = configuration["Seed:AdminEmail"]?.Trim().ToLowerInvariant();
+        var targetPassword = configuration["Seed:AdminPassword"];
+        if (string.IsNullOrEmpty(targetEmail) || string.IsNullOrEmpty(targetPassword))
+            return;
+
+        var legacy = await db.Users.FirstOrDefaultAsync(
+            u => u.UserName == "admin" && u.Email.EndsWith("@legacy.local"),
+            ct);
+        if (legacy is null)
+            return;
+
+        legacy.Email = targetEmail;
+        legacy.Role = UserRole.Admin;
+        legacy.PasswordHash = hasher.HashPassword(legacy, targetPassword);
+        legacy.UpdatedAt = now;
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task<int> EnsureSeedUsersAsync(
+        DataContext db,
+        IConfiguration configuration,
+        PasswordHasher<StoreUser> hasher,
+        DateTime now,
+        CancellationToken ct)
+    {
+        var section = configuration.GetSection("Seed:Users");
+        if (!section.Exists())
+        {
+            var fallback = await db.Users.OrderBy(u => u.Id).FirstOrDefaultAsync(ct);
+            if (fallback is null)
+                throw new InvalidOperationException("Seed:Users tanımlı değil ve veritabanında kullanıcı yok.");
+            return fallback.Id;
+        }
+
+        foreach (var child in section.GetChildren())
+        {
+            var email = child["Email"]?.Trim().ToLowerInvariant();
+            var userName = child["UserName"]?.Trim();
+            var password = child["Password"];
+            var roleStr = child["Role"];
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(userName) ||
+                string.IsNullOrEmpty(password) || string.IsNullOrEmpty(roleStr))
+                continue;
+            if (!Enum.TryParse<UserRole>(roleStr, ignoreCase: true, out var role))
+                continue;
+
+            var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+            if (existing is null)
+            {
+                var u = new StoreUser
+                {
+                    UserName = userName,
+                    Email = email,
+                    Role = role,
+                    PasswordHash = "",
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                };
+                u.PasswordHash = hasher.HashPassword(u, password);
+                db.Users.Add(u);
+            }
+            else
+            {
+                existing.UserName = userName;
+                existing.Role = role;
+                existing.PasswordHash = hasher.HashPassword(existing, password);
+                existing.UpdatedAt = now;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var admin = await db.Users.FirstAsync(u => u.Role == UserRole.Admin, ct);
+        return admin.Id;
     }
 
     private static async Task<Category> GetOrCreateCategoryAsync(

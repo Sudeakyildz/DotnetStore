@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using DotnetStore.Api.Infrastructure;
 using DotnetStore.Api.Options;
@@ -34,16 +35,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwt.Issuer,
             ValidAudience = jwt.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+            RoleClaimType = ClaimTypes.Role,
         };
     });
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IFeatureService, FeatureService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
@@ -106,7 +110,7 @@ if (app.Environment.IsDevelopment())
             await db.Database.MigrateAsync();
         }
 
-        await DatabaseSeeder.SeedAsync(db);
+        await DatabaseSeeder.SeedAsync(db, app.Configuration);
     }
 
     app.UseSwagger();
@@ -119,6 +123,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

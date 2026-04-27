@@ -1,4 +1,6 @@
+using System.Globalization;
 using DotnetStore.Api.DTOs.Products;
+using DotnetStore.Api.Infrastructure;
 using DotnetStore.Api.Services.Results;
 using Microsoft.EntityFrameworkCore;
 using StajDb;
@@ -10,11 +12,13 @@ public sealed class ProductService : IProductService
 {
     private readonly DataContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly IAuditService _audit;
 
-    public ProductService(DataContext db, ICurrentUser currentUser)
+    public ProductService(DataContext db, ICurrentUser currentUser, IAuditService audit)
     {
         _db = db;
         _currentUser = currentUser;
+        _audit = audit;
     }
 
     public async Task<IReadOnlyList<ProductListItemDto>> SearchAsync(
@@ -156,6 +160,9 @@ public sealed class ProductService : IProductService
         _db.Products.Add(product);
         await _db.SaveChangesAsync(ct);
 
+        if (uid is int u1)
+            await _audit.LogAsync(u1, AuditActions.ProductCreate, $"Ürün #{product.Id}: {product.Name}", ct);
+
         var detail = await GetByIdAsync(product.Id, ct);
         return detail is null
             ? AppResult<ProductDetailDto>.Fail("Ürün oluşturulamadı.", 500)
@@ -244,6 +251,109 @@ public sealed class ProductService : IProductService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        if (uid is int u2)
+            await _audit.LogAsync(u2, AuditActions.ProductUpdate, $"Ürün #{id}: {product.Name}", ct);
+
+        return AppResult<Unit>.Ok(Unit.Value);
+    }
+
+    public async Task<AppResult<Unit>> UpdatePriceOnlyAsync(int id, decimal newPrice, CancellationToken ct)
+    {
+        var product = await _db.Products
+            .Include(p => p.Prices)
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
+        if (product is null)
+            return AppResult<Unit>.Fail("Bulunamadı.", 404);
+
+        var now = DateTime.UtcNow;
+        var uid = _currentUser.UserId;
+        if (uid is null)
+            return AppResult<Unit>.Fail("Oturum yok.", 401);
+
+        var active = product.Prices.Where(pp => pp.EndDate == null).ToList();
+        foreach (var row in active)
+        {
+            row.EndDate = now;
+            row.UpdatedByUserId = uid;
+            row.UpdatedAt = now;
+        }
+
+        product.Prices.Add(new ProductPrice
+        {
+            Price = decimal.Round(newPrice, 2, MidpointRounding.AwayFromZero),
+            IsDiscount = false,
+            StartDate = now,
+            EndDate = null,
+            CreatedByUserId = uid,
+            CreatedAt = now,
+            UpdatedByUserId = uid,
+            UpdatedAt = now,
+        });
+        product.UpdatedByUserId = uid;
+        product.UpdatedAt = now;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (uid is int u3)
+            await _audit.LogAsync(
+                u3,
+                AuditActions.ProductPriceUpdate,
+                $"Ürün #{id} {product.Name}: yeni fiyat {newPrice.ToString(CultureInfo.InvariantCulture)} ₺",
+                ct);
+
+        return AppResult<Unit>.Ok(Unit.Value);
+    }
+
+    public async Task<AppResult<Unit>> UpdateFeatureValuesOnlyAsync(
+        int id,
+        IReadOnlyList<ProductFeatureValueItem> featureValues,
+        CancellationToken ct)
+    {
+        var product = await _db.Products
+            .Include(p => p.FeatureValues)
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
+        if (product is null)
+            return AppResult<Unit>.Fail("Bulunamadı.", 404);
+
+        if (featureValues.Count > 0)
+        {
+            var featureIds = featureValues.Select(f => f.FeatureId).Distinct().ToList();
+            var validCount = await _db.Features.CountAsync(
+                f => featureIds.Contains(f.Id) && !f.IsDeleted, ct);
+            if (validCount != featureIds.Count)
+                return AppResult<Unit>.Fail("Geçersiz FeatureId var.", 400);
+        }
+
+        var now = DateTime.UtcNow;
+        var uid = _currentUser.UserId;
+        if (uid is null)
+            return AppResult<Unit>.Fail("Oturum yok.", 401);
+
+        _db.ProductFeatures.RemoveRange(product.FeatureValues);
+        product.FeatureValues.Clear();
+
+        foreach (var fv in featureValues)
+        {
+            product.FeatureValues.Add(new ProductFeatureValue
+            {
+                FeatureId = fv.FeatureId,
+                Value = fv.Value.Trim(),
+                CreatedByUserId = uid,
+                CreatedAt = now,
+                UpdatedByUserId = uid,
+                UpdatedAt = now,
+            });
+        }
+
+        product.UpdatedByUserId = uid;
+        product.UpdatedAt = now;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (uid is int u4)
+            await _audit.LogAsync(u4, AuditActions.ProductFeaturesUpdate, $"Ürün #{id}: özellik değerleri güncellendi", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 
@@ -254,10 +364,15 @@ public sealed class ProductService : IProductService
             return AppResult<Unit>.Fail("Bulunamadı.", 404);
 
         var now = DateTime.UtcNow;
+        var name = product.Name;
         product.IsDeleted = true;
         product.UpdatedByUserId = _currentUser.UserId;
         product.UpdatedAt = now;
         await _db.SaveChangesAsync(ct);
+
+        if (_currentUser.UserId is int u5)
+            await _audit.LogAsync(u5, AuditActions.ProductDelete, $"Ürün #{id}: {name}", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 }

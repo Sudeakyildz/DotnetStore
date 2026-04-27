@@ -7,4 +7,6 @@ public interface IAuthService
 {
     Task<AppResult<LoginResponse>> RegisterAsync(RegisterRequest dto, CancellationToken ct);
     Task<AppResult<LoginResponse>> LoginAsync(LoginRequest dto, CancellationToken ct);
+    Task<AppResult<Unit>> LogoutAsync(CancellationToken ct);
+    Task<AppResult<MeResponse>> GetMeAsync(CancellationToken ct);
 }

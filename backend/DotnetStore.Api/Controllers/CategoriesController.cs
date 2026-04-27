@@ -1,3 +1,4 @@
+using DotnetStore.Api.Authorization;
 using DotnetStore.Api.DTOs.Categories;
 using DotnetStore.Api.Helpers;
 using DotnetStore.Api.Services;
@@ -19,6 +20,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = AuthRoles.CatalogReaders)]
     public async Task<ActionResult<IEnumerable<CategoryResponse>>> GetAll(CancellationToken ct)
     {
         var list = await _categories.GetAllAsync(ct);
@@ -26,6 +28,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = AuthRoles.CatalogReaders)]
     public async Task<ActionResult<CategoryResponse>> GetById(int id, CancellationToken ct)
     {
         var c = await _categories.GetByIdAsync(id, ct);
@@ -34,6 +37,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = AuthRoles.AdminOrStaffCategories)]
     public async Task<IActionResult> Create([FromBody] CategoryCreateRequest dto, CancellationToken ct)
     {
         var r = await _categories.CreateAsync(dto, ct);
@@ -41,6 +45,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = AuthRoles.AdminOrStaffCategories)]
     public async Task<IActionResult> Update(int id, [FromBody] CategoryUpdateRequest dto, CancellationToken ct)
     {
         var r = await _categories.UpdateAsync(id, dto, ct);
@@ -48,6 +53,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = AuthRoles.AdminOrStaffCategories)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var r = await _categories.DeleteAsync(id, ct);

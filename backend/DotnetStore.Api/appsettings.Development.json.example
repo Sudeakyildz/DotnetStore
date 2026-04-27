@@ -1,0 +1,20 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Seed": {
+    "AdminEmail": "ornek@email.com",
+    "AdminPassword": "GUVENLI_SIFRE",
+    "Users": [
+      {
+        "Email": "ornek@email.com",
+        "UserName": "Yönetici",
+        "Password": "GUVENLI_SIFRE",
+        "Role": "Admin"
+      }
+    ]
+  }
+}

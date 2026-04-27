@@ -1,5 +1,6 @@
 using DotnetStore.Api.DTOs.Categories;
 using DotnetStore.Api.Helpers;
+using DotnetStore.Api.Infrastructure;
 using DotnetStore.Api.Services.Results;
 using Microsoft.EntityFrameworkCore;
 using StajDb;
@@ -11,11 +12,13 @@ public sealed class CategoryService : ICategoryService
 {
     private readonly DataContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly IAuditService _audit;
 
-    public CategoryService(DataContext db, ICurrentUser currentUser)
+    public CategoryService(DataContext db, ICurrentUser currentUser, IAuditService audit)
     {
         _db = db;
         _currentUser = currentUser;
+        _audit = audit;
     }
 
     public async Task<IReadOnlyList<CategoryResponse>> GetAllAsync(CancellationToken ct)
@@ -66,6 +69,9 @@ public sealed class CategoryService : ICategoryService
         _db.Categories.Add(entity);
         await _db.SaveChangesAsync(ct);
 
+        if (uid is int u1)
+            await _audit.LogAsync(u1, AuditActions.CategoryCreate, $"Grup #{entity.Id}: {entity.Name}", ct);
+
         return AppResult<CategoryResponse>.Ok(ToResponse(entity));
     }
 
@@ -93,6 +99,10 @@ public sealed class CategoryService : ICategoryService
         entity.UpdatedAt = now;
 
         await _db.SaveChangesAsync(ct);
+
+        if (uid is int u2)
+            await _audit.LogAsync(u2, AuditActions.CategoryUpdate, $"Grup #{id}: {entity.Name}", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 
@@ -103,10 +113,15 @@ public sealed class CategoryService : ICategoryService
             return AppResult<Unit>.Fail("Bulunamadı.", 404);
 
         var now = DateTime.UtcNow;
+        var name = entity.Name;
         entity.IsDeleted = true;
         entity.UpdatedByUserId = _currentUser.UserId;
         entity.UpdatedAt = now;
         await _db.SaveChangesAsync(ct);
+
+        if (_currentUser.UserId is int u3)
+            await _audit.LogAsync(u3, AuditActions.CategoryDelete, $"Grup #{id}: {name}", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 

@@ -1,4 +1,5 @@
 using DotnetStore.Api.DTOs.Features;
+using DotnetStore.Api.Infrastructure;
 using DotnetStore.Api.Services.Results;
 using Microsoft.EntityFrameworkCore;
 using StajDb;
@@ -10,11 +11,13 @@ public sealed class FeatureService : IFeatureService
 {
     private readonly DataContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly IAuditService _audit;
 
-    public FeatureService(DataContext db, ICurrentUser currentUser)
+    public FeatureService(DataContext db, ICurrentUser currentUser, IAuditService audit)
     {
         _db = db;
         _currentUser = currentUser;
+        _audit = audit;
     }
 
     public async Task<IReadOnlyList<FeatureResponse>> GetAllAsync(CancellationToken ct)
@@ -61,6 +64,10 @@ public sealed class FeatureService : IFeatureService
 
         _db.Features.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        if (uid is int u1)
+            await _audit.LogAsync(u1, AuditActions.FeatureCreate, $"Özellik #{entity.Id}: {entity.Name}", ct);
+
         return AppResult<FeatureResponse>.Ok(ToResponse(entity));
     }
 
@@ -85,6 +92,10 @@ public sealed class FeatureService : IFeatureService
         entity.UpdatedByUserId = uid;
         entity.UpdatedAt = now;
         await _db.SaveChangesAsync(ct);
+
+        if (uid is int u2)
+            await _audit.LogAsync(u2, AuditActions.FeatureUpdate, $"Özellik #{id}: {entity.Name}", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 
@@ -95,10 +106,15 @@ public sealed class FeatureService : IFeatureService
             return AppResult<Unit>.Fail("Bulunamadı.", 404);
 
         var now = DateTime.UtcNow;
+        var name = entity.Name;
         entity.IsDeleted = true;
         entity.UpdatedByUserId = _currentUser.UserId;
         entity.UpdatedAt = now;
         await _db.SaveChangesAsync(ct);
+
+        if (_currentUser.UserId is int u3)
+            await _audit.LogAsync(u3, AuditActions.FeatureDelete, $"Özellik #{id}: {name}", ct);
+
         return AppResult<Unit>.Ok(Unit.Value);
     }
 

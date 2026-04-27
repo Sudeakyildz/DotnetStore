@@ -1,3 +1,4 @@
+using DotnetStore.Api.Authorization;
 using DotnetStore.Api.DTOs.Features;
 using DotnetStore.Api.Helpers;
 using DotnetStore.Api.Services;
@@ -19,12 +20,14 @@ public class FeaturesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = AuthRoles.Admin + "," + AuthRoles.StaffFeatures + "," + AuthRoles.StaffPrices)]
     public async Task<ActionResult<IEnumerable<FeatureResponse>>> GetAll(CancellationToken ct)
     {
         return Ok(await _features.GetAllAsync(ct));
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = AuthRoles.Admin + "," + AuthRoles.StaffFeatures + "," + AuthRoles.StaffPrices)]
     public async Task<ActionResult<FeatureResponse>> GetById(int id, CancellationToken ct)
     {
         var f = await _features.GetByIdAsync(id, ct);
@@ -33,6 +36,7 @@ public class FeaturesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = AuthRoles.AdminOrStaffFeatures)]
     public async Task<IActionResult> Create([FromBody] FeatureCreateRequest dto, CancellationToken ct)
     {
         var r = await _features.CreateAsync(dto, ct);
@@ -40,6 +44,7 @@ public class FeaturesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = AuthRoles.AdminOrStaffFeatures)]
     public async Task<IActionResult> Update(int id, [FromBody] FeatureUpdateRequest dto, CancellationToken ct)
     {
         var r = await _features.UpdateAsync(id, dto, ct);
@@ -47,6 +52,7 @@ public class FeaturesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = AuthRoles.AdminOrStaffFeatures)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var r = await _features.DeleteAsync(id, ct);

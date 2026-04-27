@@ -8,7 +8,6 @@ namespace DotnetStore.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
@@ -19,16 +18,35 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest body, CancellationToken ct)
+    [AllowAnonymous]
+    public IActionResult RegisterDisabled()
     {
-        var r = await _auth.RegisterAsync(body, ct);
-        return r.ToActionResult(this, d => Ok(d));
+        return StatusCode(
+            StatusCodes.Status403Forbidden,
+            new { message = "Herkese açık kayıt kapalıdır. Size atanmış yönetici hesabı ile giriş yapın." });
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken ct)
     {
         var r = await _auth.LoginAsync(body, ct);
+        return r.ToActionResult(this, d => Ok(d));
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout(CancellationToken ct)
+    {
+        var r = await _auth.LogoutAsync(ct);
+        return r.ToActionResult(this);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me(CancellationToken ct)
+    {
+        var r = await _auth.GetMeAsync(ct);
         return r.ToActionResult(this, d => Ok(d));
     }
 }
