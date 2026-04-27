@@ -10,4 +10,12 @@ public class StoreUser
 
     public DateTime CreatedAt { get; set; }//Kullanıcının oluşturulma tarihi(Ne zaman oluşturuldu?)
     public DateTime UpdatedAt { get; set; } //Kullanıcının güncellenme tarihi(Ne zaman güncellendi?)
+
+    public string Email { get; set; } = null!;
+
+    public UserRole Role { get; set; }
+
+    public DateTime? FirstLoginAt { get; set; }
+
+    public DateTime? LastLoginAt { get; set; }
 }

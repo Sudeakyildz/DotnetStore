@@ -15,6 +15,9 @@ public class DataContext : DbContext
     public DbSet<Feature> Features => Set<Feature>();
     public DbSet<ProductFeatureValue> ProductFeatures => Set<ProductFeatureValue>();
     public DbSet<ProductPrice> ProductPrices => Set<ProductPrice>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,9 +29,27 @@ public class DataContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.UserName).IsRequired().HasMaxLength(100);
             entity.HasIndex(e => e.UserName).IsUnique();
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.Role).HasConversion<int>().IsRequired();
             entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(500);
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLogs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Details).HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).IsRequired();
+            entity.HasIndex(e => e.CreatedAtUtc);
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<Category>(entity =>
@@ -160,6 +181,52 @@ public class DataContext : DbContext
                 .WithMany(p => p.Prices)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.ToTable("Orders");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).HasConversion<int>().IsRequired();
+            entity.Property(e => e.Note).HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.HasIndex(e => e.CustomerUserId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.ToTable("OrderItems");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Quantity).IsRequired();
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
+            entity.HasIndex(e => e.OrderId);
+            entity.HasIndex(e => e.ProductId);
+            entity.HasIndex(e => new { e.OrderId, e.ProductId }).IsUnique();
+
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
