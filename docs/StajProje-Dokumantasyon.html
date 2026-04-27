@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="StajProje: yönetim API’si, veri modeli, güvenlik ve kurulum — teknik özet." />
+  <title>StajProje — Teknik Dokümantasyon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0c1222;
+      --muted: #5c6578;
+      --line: #e2e8f0;
+      --surface: #f1f5f9;
+      --accent: #1d4ed8;
+      --accent-dark: #1e3a8a;
+      --accent-soft: #eff6ff;
+      --teal: #0d9488;
+      --teal-soft: #ccfbf1;
+      --page-bg: #ffffff;
+      --cover-bg: #070b14;
+      --cover-accent: #3b82f6;
+      --prose-max: 70ch;
+      /* A4 içerik yüksekliği: 297mm − @page üst (15mm) − alt (22mm, sayfa no için) */
+      --page-inner-h: 260mm;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: var(--ink);
+      background: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "kern" 1, "liga" 1;
+    }
+    .doc { max-width: 210mm; margin: 0 auto; background: var(--page-bg); box-shadow: 0 20px 60px rgba(12, 18, 34, 0.1); }
+
+    .cover {
+      position: relative;
+      height: var(--page-inner-h);
+      min-height: var(--page-inner-h);
+      max-height: var(--page-inner-h);
+      padding: 0;
+      background: var(--cover-bg);
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      page-break-after: always;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
+    .cover-topbar {
+      height: 5px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+      flex-shrink: 0;
+    }
+    .cover-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12mm 24mm 10mm;
+      position: relative;
+      min-height: 0;
+    }
+    .cover::before {
+      content: "";
+      position: absolute;
+      inset: 5px 0 auto 0;
+      height: 55%;
+      background: radial-gradient(ellipse 75% 80% at 20% 0%, rgba(59, 130, 246, 0.35) 0%, transparent 55%),
+                  radial-gradient(ellipse 60% 70% at 90% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .cover-inner { position: relative; z-index: 1; max-width: 38rem; }
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 8pt;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+    .cover-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--cover-accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+    }
+    .cover-kicker {
+      font-size: 8.5pt;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 4mm;
+    }
+    .cover h1 {
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 28pt;
+      line-height: 1.1;
+      margin: 0 0 4mm;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .cover h1 .cover-title-line2 {
+      display: block;
+      font-weight: 600;
+      font-size: 0.58em;
+      margin-top: 2mm;
+      letter-spacing: -0.01em;
+      color: #e2e8f0;
+    }
+    .cover .subtitle {
+      font-size: 10.5pt;
+      line-height: 1.5;
+      color: rgba(203, 213, 225, 0.95);
+      max-width: 48ch;
+      margin-top: 1mm;
+    }
+    .cover-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6mm; }
+    .cover-strip span {
+      font-size: 8.5pt;
+      padding: 5px 11px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: #e2e8f0;
+    }
+    .title-page {
+      height: var(--page-inner-h);
+      min-height: var(--page-inner-h);
+      max-height: var(--page-inner-h);
+      padding: 16mm 20mm 14mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      page-break-after: always;
+      page-break-inside: avoid;
+      overflow: hidden;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .title-page-doc {
+      font-family: inherit;
+      font-size: 17pt;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin: 0 0 2mm;
+      letter-spacing: -0.02em;
+    }
+    .title-page-type {
+      font-size: 10.5pt;
+      color: var(--muted);
+      margin: 0 0 12mm;
+      max-width: 42ch;
+      line-height: 1.45;
+    }
+    .title-page-author-label {
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin: 0 0 2mm;
+    }
+    .title-page-author-name {
+      font-size: 17pt;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0 0 10mm;
+      letter-spacing: -0.015em;
+    }
+    .title-page h2.title-page-doc {
+      border-left: none;
+      padding-left: 0;
+      margin-top: 0;
+      margin-bottom: 2mm;
+    }
+
+    .toc-page {
+      height: var(--page-inner-h);
+      min-height: var(--page-inner-h);
+      max-height: var(--page-inner-h);
+      padding: 10mm 16mm 12mm;
+      page-break-after: always;
+      page-break-inside: avoid;
+      overflow: hidden;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .content { padding: 12mm 16mm 16mm; counter-reset: doc-h2; }
+    .content > h2 { counter-increment: doc-h2; }
+    .content > h2::before {
+      content: counter(doc-h2) ". ";
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h2 {
+      font-family: inherit;
+      font-size: 14pt;
+      font-weight: 700;
+      margin: 9mm 0 3.5mm;
+      padding: 0 0 0 3mm;
+      border-left: 4px solid var(--accent);
+      color: var(--ink);
+      page-break-after: avoid;
+      letter-spacing: -0.015em;
+    }
+    .toc h2::before { content: none !important; }
+    .toc h2 { counter-increment: none; }
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      margin: 5mm 0 2mm;
+      color: var(--accent-dark);
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 3mm; max-width: var(--prose-max); }
+    .lead {
+      font-size: 10.5pt;
+      color: var(--muted);
+      margin-bottom: 4mm;
+      line-height: 1.55;
+      max-width: var(--prose-max);
+    }
+    ul, ol { margin: 0 0 4mm; padding-left: 5.5mm; max-width: var(--prose-max); }
+    li { margin-bottom: 1.5mm; }
+    li::marker { color: var(--accent); }
+    a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
+
+    .toc {
+      background: #fafbfc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 5mm 6mm 5mm 7mm;
+      margin: 0;
+      height: 100%;
+      max-height: calc(var(--page-inner-h) - 22mm);
+      display: flex;
+      flex-direction: column;
+      page-break-inside: avoid;
+    }
+    .toc h2 {
+      border-left: none;
+      padding-left: 0;
+      margin: 0 0 6mm;
+      font-size: 18pt;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+    .toc ol {
+      margin: 0;
+      padding: 0 0 0 5mm;
+      list-style-position: outside;
+      column-count: 1;
+      font-size: 11.5pt;
+      line-height: 1.55;
+      flex: 0 1 auto;
+    }
+    .toc li {
+      margin-bottom: 3mm;
+      break-inside: avoid;
+    }
+    .toc a { font-weight: 700; color: var(--accent-dark); }
+
+    .table-wrap { overflow-x: auto; margin: 3mm 0 5mm; }
+    table.data {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 9.1pt;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    table.wide-rel { page-break-inside: auto; }
+    table.wide-rel thead { display: table-header-group; }
+    table.wide-rel tr { page-break-inside: avoid; }
+    .data th, .data td {
+      border-bottom: 1px solid var(--line);
+      padding: 2.2mm 2.6mm;
+      vertical-align: top;
+      text-align: left;
+    }
+    .data th.num, .data td.num { text-align: right; white-space: nowrap; }
+    .data tr:last-child td { border-bottom: none; }
+    .data th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      font-weight: 700;
+      font-size: 7.8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-dark);
+    }
+    .data tbody tr:nth-child(even) td { background: #fafbfc; }
+    .data caption {
+      caption-side: top;
+      text-align: left;
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 0 0 2mm;
+    }
+    tbody tr:hover td { background: var(--accent-soft); }
+
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 8.5pt;
+      background: #f1f5f9;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      color: #1e293b;
+    }
+    pre {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 8.5pt;
+      background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      padding: 3.5mm;
+      border-radius: 10px;
+      overflow-x: auto;
+      page-break-inside: avoid;
+      line-height: 1.45;
+      border: 1px solid #334155;
+      max-width: 100%;
+    }
+    .callout {
+      border: 1px solid #bfdbfe;
+      background: var(--accent-soft);
+      padding: 3.5mm 4.5mm;
+      margin: 4mm 0;
+      border-radius: 10px;
+      page-break-inside: avoid;
+      max-width: var(--prose-max);
+    }
+    .callout strong { color: var(--accent-dark); }
+    .diagram {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 8pt;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 3.5mm;
+      border-radius: 10px;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.3;
+      page-break-inside: avoid;
+      margin: 3mm 0;
+    }
+    .muted { color: var(--muted); font-size: inherit; }
+    @page {
+      size: A4;
+      margin: 15mm 14mm 22mm 14mm;
+      @bottom-center {
+        content: "Sayfa " counter(page) " / " counter(pages);
+        font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+      }
+    }
+    /* Kapakta alt bilgi yok; içerik sayfalarında sayfa numarası */
+    @page :first {
+      margin-bottom: 15mm;
+      @bottom-center { content: none; }
+    }
+    @media print {
+      body {
+        background: #fff;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .doc { box-shadow: none; max-width: none; margin: 0; }
+      .cover {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        height: var(--page-inner-h);
+        max-height: var(--page-inner-h);
+      }
+      .title-page,
+      .toc-page {
+        height: var(--page-inner-h);
+        max-height: var(--page-inner-h);
+      }
+      .content { padding: 10mm 12mm 14mm; }
+      tbody tr:hover td { background: inherit; }
+      .data tbody tr:nth-child(even) td { background: #fafbfc; }
+      a { color: var(--ink); text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <article class="doc">
+    <header class="cover">
+      <div class="cover-topbar" aria-hidden="true"></div>
+      <div class="cover-body">
+        <div class="cover-inner">
+          <p class="cover-kicker">Staj projesi · Teknik dokümantasyon</p>
+          <h1>
+            StajProje
+            <span class="cover-title-line2">E-Ticaret Yönetim Sistemi</span>
+          </h1>
+          <p class="subtitle">
+            Ürün ve kategori yönetimi için REST API ve web paneli: mimari, veri modeli, güvenlik ve kurulum.
+          </p>
+          <div class="cover-strip" aria-hidden="true">
+            <span>ASP.NET Core</span>
+            <span>EF Core</span>
+            <span>JWT</span>
+            <span>React · TypeScript</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="title-page" aria-label="İç kapak">
+      <h2 class="title-page-doc">StajProje</h2>
+      <p class="title-page-type">Teknik dokümantasyon · E-Ticaret yönetim sistemi</p>
+      <p class="title-page-author-label">Hazırlayan</p>
+      <p class="title-page-author-name">Sude Nur Akyıldız</p>
+    </section>
+
+    <section class="toc-page" aria-label="İçindekiler sayfası">
+      <nav class="toc">
+        <h2>İçindekiler</h2>
+        <ol>
+          <li><a href="#ozet">Yönetici özeti</a></li>
+          <li><a href="#kapsam">Kapsam</a></li>
+          <li><a href="#mimari">Sistem mimarisi</a></li>
+          <li><a href="#teknoloji">Teknoloji yığını</a></li>
+          <li><a href="#yapi">Depo ve çözüm yapısı</a></li>
+          <li><a href="#veri">Veri modeli</a></li>
+          <li><a href="#iliski">Veritabanı ilişkileri (FK)</a></li>
+          <li><a href="#api">REST API</a></li>
+          <li><a href="#guvenlik">Kimlik doğrulama ve güvenlik</a></li>
+          <li><a href="#frontend">Ön yüz</a></li>
+          <li><a href="#kurulum">Kurulum</a></li>
+          <li><a href="#seeder">Örnek veri (seeder)</a></li>
+          <li><a href="#dev">Geliştirme notları</a></li>
+        </ol>
+      </nav>
+    </section>
+
+    <div class="content">
+      <h2 id="ozet">Yönetici özeti</h2>
+      <p class="lead"><strong>Çözdüğü problem:</strong> Ürün grupları, ürünler, özellik değerleri ve güncel fiyatın tek yerden yönetilmesi. Dağınık tablo veya manuel süreç yerine tek API ve panel.</p>
+      <p><strong>Kim kullanır:</strong> İç operasyon veya yönetici rolü; staj veya küçük ölçekli katalog senaryoları için uygundur.</p>
+      <p><strong>Neden önemli:</strong> Veri bütünlüğü (FK, validasyon), tekrar kullanılabilir servis katmanı ve ileride vitrin veya mobil istemci eklenebilecek net bir REST sözleşmesi sunar.</p>
+      <p class="muted">Kalıcılık SQL Server üzerinden; geliştirmede açılışta migrasyon ve isteğe bağlı örnek veri yüklemesi çalışır.</p>
+
+      <h2 id="kapsam">Kapsam</h2>
+      <p>Bu belge mimari özet, veritabanı ilişkileri, REST API yüzeyi, güvenlik modeli ve kurulum adımlarını içerir. Davranış ve sözleşme ayrıntıları için kaynak kod esas alınmalıdır.</p>
+      <p class="muted">Kapsam dışı: iş analizi, pazar gereksinimleri, ayrıntılı arayüz kullanım kılavuzu.</p>
+
+      <h2 id="mimari">Sistem mimarisi</h2>
+      <p><strong>HTTP istek akışı:</strong> İstemci JSON gövdesi veya sorgu parametreleri ile REST uç noktasına istek atar. ASP.NET Core pipeline isteği ilgili controller’a yönlendirir. Korunan uçlarda önce JWT doğrulanır; ardından FluentValidation istek DTO’sunu kontrol eder. Controller ince kalır; iş kuralı ilgili service sınıfında çalışır. Service, EF Core üzerinden veritabanına yazar veya okur.</p>
+      <p><strong>Kimlik doğrulama akışı:</strong> <code>POST /api/Auth/login</code> başarılı olunca API erişim jetonu (JWT) döner. İstemci sonraki isteklerde <code>Authorization: Bearer &lt;token&gt;</code> başlığını gönderir. API, yapılandırılmış imza ve süre ile jetonu doğrular; geçersiz veya süresi dolmuş jeton 401 üretir.</p>
+      <p>Geliştirmede tarayıcıdaki React uygulaması, Vite’ın <code>/api</code> vekili ile API’ye ulaşır. Üretimde genelde aynı kök veya reverse proxy kullanılır.</p>
+      <div class="diagram">  ┌──────────────────┐     proxy: /api      ┌──────────────────────────┐
+  │  React (Vite)    │ ───────────────────► │  ASP.NET Core Web API    │
+  │  Panel           │   JSON + JWT Bearer  │  Controllers / Services  │
+  └──────────────────┘                      └─────────────┬────────────┘
+                                                          │ EF Core
+                                                          ▼
+                                               ┌──────────────────────────┐
+                                               │  Microsoft SQL Server    │
+                                               └──────────────────────────┘</div>
+
+      <h2 id="teknoloji">Teknoloji yığını</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <caption>Teknoloji ve gerekçe (özet)</caption>
+          <thead><tr><th>Bileşen</th><th>Seçim gerekçesi</th></tr></thead>
+          <tbody>
+            <tr><td>ASP.NET Core</td><td>REST API, DI ve JWT middleware için olgun ekosistem; Kestrel ile yerel ve barındırma uyumu.</td></tr>
+            <tr><td>FluentValidation</td><td>Doğrulama kurallarını controller’dan ayırmak ve yeniden kullanılabilir test edilebilir kurallar.</td></tr>
+            <tr><td>EF Core</td><td>Code First ve migrasyon ile şemanın kodla yönetimi; LINQ ile okunabilir veri erişimi.</td></tr>
+            <tr><td>SQL Server / LocalDB</td><td>Geliştirme ve küçük dağıtımlar için yerel kurulum kolaylığı; ilişkisel bütünlük ve indeksler.</td></tr>
+            <tr><td>Swagger (OpenAPI)</td><td>Development’ta sözleşmeyi hızlı doğrulama; üretimde genelde kapatılır.</td></tr>
+            <tr><td>React + TypeScript + Vite</td><td>Bileşen tabanlı panel; tip güvenliği; hızlı geliştirme sunucusu.</td></tr>
+            <tr><td>Bootstrap 5</td><td>Form ve tablo yerleşimi için hazır bileşen seti; ek tema <code>admin-shell.css</code> ile uyum.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="yapi">Depo ve çözüm yapısı</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Yol</th><th>İçerik</th></tr></thead>
+          <tbody>
+            <tr><td><code>StajProje.sln</code></td><td>Çözüm dosyası</td></tr>
+            <tr><td><code>db/StajDb/</code></td><td><code>DataContext</code>, entity’ler, EF migrasyonları</td></tr>
+            <tr><td><code>backend/DotnetStore.Api/</code></td><td>Web API, DTO, servisler, doğrulayıcılar, <code>DatabaseSeeder</code></td></tr>
+            <tr><td><code>Frontend/</code></td><td>React uygulaması</td></tr>
+            <tr><td><code>docs/</code></td><td>Bu dokümantasyon</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="veri">Veri modeli</h2>
+      <p>Model, katalog (kategori, ürün), esnek özellikler (feature + ürün başına değer) ve fiyat geçmişine yer açacak şekilde ayrılmıştır. Ürün kartında tek bir fiyat sütunu tutmak yerine <code>ProductPrices</code> kullanılır: böylece indirim, tarih aralığı ve ileride geçmiş fiyat izi aynı yapıda kalır. Güncel satır, <code>EndDate</code> boş olan kayıt ve buna bağlı filtreli tekil indeks ile kısıtlanır.</p>
+      <p><code>ProductFeatures</code> ara tablosu, ürün başına dinamik özellik (renk, depolama vb.) tekrarını önler; özellik tanımı <code>Features</code> tablosunda merkezi kalır.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Tablo</th><th>Varlık</th><th>Rol</th></tr></thead>
+          <tbody>
+            <tr><td><code>Users</code></td><td><code>StoreUser</code></td><td>Giriş hesapları</td></tr>
+            <tr><td><code>Categories</code></td><td><code>Category</code></td><td>Ürün grubu; benzersiz <code>Slug</code></td></tr>
+            <tr><td><code>Products</code></td><td><code>Product</code></td><td>Ürün; kategori ve durum</td></tr>
+            <tr><td><code>Features</code></td><td><code>Feature</code></td><td>Özellik tanımı; benzersiz ad</td></tr>
+            <tr><td><code>ProductFeatures</code></td><td><code>ProductFeatureValue</code></td><td>Ürün–özellik değeri</td></tr>
+            <tr><td><code>ProductPrices</code></td><td><code>ProductPrice</code></td><td>Fiyat satırı; güncel için filtreli tekil indeks</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted"><code>Categories.Slug</code> ve <code>Features.Name</code> veritabanında tekil indekslidir (silinmiş satırlar dahil).</p>
+
+      <h2 id="iliski">Veritabanı ilişkileri (FK)</h2>
+      <p class="muted">Tek özet tablo. <strong>ON DELETE</strong> SQL Server / EF davranışıdır: <code>RESTRICT</code> = ilişkili kayıt varken üst silinemez; <code>CASCADE</code> = üst silinince alt silinir; <code>NO ACTION</code> = FK ihlalinde işlem reddedilir, zincirleme silme yoktur.</p>
+      <div class="table-wrap">
+        <table class="data wide-rel">
+          <thead>
+            <tr>
+              <th>Kaynak tablo</th>
+              <th>FK sütunu</th>
+              <th>Referans</th>
+              <th class="num">ON DELETE</th>
+              <th>Not</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Categories</code></td><td><code>CreatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>Categories</code></td><td><code>UpdatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>Products</code></td><td><code>CategoryId</code></td><td><code>Categories.Id</code></td><td class="num">RESTRICT</td><td>Ürün varken kategori silinemez</td></tr>
+            <tr><td><code>Products</code></td><td><code>CreatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>Products</code></td><td><code>UpdatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>Features</code></td><td><code>CreatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>Features</code></td><td><code>UpdatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>ProductFeatures</code></td><td><code>ProductId</code></td><td><code>Products.Id</code></td><td class="num">CASCADE</td><td>Ürün silinince değer satırları</td></tr>
+            <tr><td><code>ProductFeatures</code></td><td><code>FeatureId</code></td><td><code>Features.Id</code></td><td class="num">CASCADE</td><td>Özellik silinince değer satırları</td></tr>
+            <tr><td><code>ProductFeatures</code></td><td><code>CreatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>ProductFeatures</code></td><td><code>UpdatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>ProductPrices</code></td><td><code>ProductId</code></td><td><code>Products.Id</code></td><td class="num">CASCADE</td><td>Ürün silinince fiyat satırları</td></tr>
+            <tr><td><code>ProductPrices</code></td><td><code>CreatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+            <tr><td><code>ProductPrices</code></td><td><code>UpdatedByUserId</code></td><td><code>Users.Id</code></td><td class="num">NO ACTION</td><td>Denetim</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="api">REST API</h2>
+      <p class="muted">Ön ek: <code>/api</code>. <code>Auth</code> uçları kimlik doğrulaması gerektirmez; diğer controller’lar geçerli JWT ister.</p>
+
+      <h3><code>AuthController</code> — <code>/api/Auth</code></h3>
+      <p>Harici istemcinin kullanıcı oluşturması ve oturum açması için. Login yanıtında süre ve token bilgisi döner; panel bu token’ı saklayıp sonraki çağrılarda kullanır.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>HTTP</th><th>Yol</th><th>İşlev</th></tr></thead>
+          <tbody>
+            <tr><td>POST</td><td><code>/api/Auth/register</code></td><td>Yeni <code>StoreUser</code>; parola hash’lenir</td></tr>
+            <tr><td>POST</td><td><code>/api/Auth/login</code></td><td>Kimlik doğrulama; JWT üretimi</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><code>CategoriesController</code> — <code>/api/Categories</code></h3>
+      <p>Ürün gruplarının listelenmesi ve CRUD işlemleri. Silme işlemi yumuşak silme (<code>IsDeleted</code>) olarak uygulanır; listeler genelde aktif kayıtları döner.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>HTTP</th><th>Yol</th><th>İşlev</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/api/Categories</code></td><td>Tüm gruplar</td></tr>
+            <tr><td>GET</td><td><code>/api/Categories/{id}</code></td><td>Tekil grup</td></tr>
+            <tr><td>POST</td><td><code>/api/Categories</code></td><td>Oluşturma</td></tr>
+            <tr><td>PUT</td><td><code>/api/Categories/{id}</code></td><td>Güncelleme</td></tr>
+            <tr><td>DELETE</td><td><code>/api/Categories/{id}</code></td><td>Yumuşak silme</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><code>FeaturesController</code> — <code>/api/Features</code></h3>
+      <p>Ürün kartlarına bağlanacak özellik şablonları (ör. renk, depolama). İsim benzersizdir; ürün formları bu listeyi doldurmak için okur.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>HTTP</th><th>Yol</th><th>İşlev</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/api/Features</code></td><td>Tüm özellikler</td></tr>
+            <tr><td>GET</td><td><code>/api/Features/{id}</code></td><td>Tekil özellik</td></tr>
+            <tr><td>POST</td><td><code>/api/Features</code></td><td>Oluşturma</td></tr>
+            <tr><td>PUT</td><td><code>/api/Features/{id}</code></td><td>Güncelleme</td></tr>
+            <tr><td>DELETE</td><td><code>/api/Features/{id}</code></td><td>Silme</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><code>ProductsController</code> — <code>/api/Products</code></h3>
+      <p>Ürün yaşam döngüsü ve arama. Liste uç noktası metin, kategori ve fiyat aralığı ile süzülür. Detay, özellik değerleri ve güncel fiyatı birlikte döner. Oluşturma ve güncelleme, fiyat ve özellik satırlarını servis kurallarıyla tutarlı şekilde işler.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>HTTP</th><th>Yol</th><th>İşlev</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/api/Products?q=&amp;categoryId=&amp;minPrice=&amp;maxPrice=</code></td><td>Filtreli liste</td></tr>
+            <tr><td>GET</td><td><code>/api/Products/{id}</code></td><td>Detay + özellikler + aktif fiyat</td></tr>
+            <tr><td>POST</td><td><code>/api/Products</code></td><td>Oluşturma (fiyat ve özellikler dahil)</td></tr>
+            <tr><td>PUT</td><td><code>/api/Products/{id}</code></td><td>Güncelleme</td></tr>
+            <tr><td>DELETE</td><td><code>/api/Products/{id}</code></td><td>Silme</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="guvenlik">Kimlik doğrulama ve güvenlik</h2>
+      <ul>
+        <li><strong>JWT:</strong> İmzalama anahtarı, issuer ve audience <code>appsettings.json</code> içinde yapılandırılır. API her istekte jetonun imzasını, süresini ve hedef kitlesini doğrular.</li>
+        <li><strong>Parola:</strong> Düz metin saklanmaz; ASP.NET Core <code>PasswordHasher&lt;StoreUser&gt;</code> ile hash üretilir.</li>
+        <li><strong>Ağ:</strong> Geliştirmede HTTP kullanılabilir; üretimde HTTPS zorunlu kabul edilmelidir.</li>
+        <li><strong>CORS:</strong> Şu anki politika geliştirme kolaylığı içindir. Canlı ortamda yalnızca güvenilen kökenlere izin verilmelidir.</li>
+        <li><strong>Sır yönetimi:</strong> Depoda bulunan imzalama anahtarı örnektir; dağıtımda ortam değişkeni veya gizli kasa kullanılmalıdır.</li>
+      </ul>
+      <div class="callout">
+        <strong>Özet:</strong> Kimlik doğrulama stateless JWT ile yapılır; yetkilendirme ilke bazında genişletilebilir (şu an korunan controller’lar <code>[Authorize]</code> ile işaretlenmiştir).
+      </div>
+
+      <h2 id="frontend">Ön yüz</h2>
+      <p><strong>Durum ve oturum:</strong> Global state kütüphanesi yoktur; sayfa bileşenleri React <code>useState</code> / <code>useEffect</code> ile veri çeker. Giriş sonrası JWT, <code>localStorage</code> üzerinde tutulur; <code>apiFetch</code> her istekte <code>Authorization: Bearer</code> ekler.</p>
+      <p><strong>Yönlendirme:</strong> React Router ile korumalı rotalar <code>RequireAuth</code> ile sarılır. Oturum yoksa giriş sayfasına yönlendirilir.</p>
+      <p><strong>API adresi:</strong> Geliştirmede Vite, <code>/api</code> yolunu API sunucusuna vekil eder (hedef: <code>http://127.0.0.1:5198</code>, böylece <code>localhost</code> IPv6 çözümlemesiyle oluşan bağlantı hataları azaltılır).</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Rota</th><th>Amaç</th></tr></thead>
+          <tbody>
+            <tr><td><code>/</code>, <code>/register</code></td><td>Giriş ve kayıt</td></tr>
+            <tr><td><code>/dashboard</code></td><td>Özet istatistikler (API’den sayım)</td></tr>
+            <tr><td><code>/categories/*</code></td><td>Grup CRUD</td></tr>
+            <tr><td><code>/products/*</code></td><td>Ürün listesi, oluşturma, düzenleme</td></tr>
+            <tr><td><code>/features/*</code></td><td>Özellik tanımları</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="kurulum">Kurulum</h2>
+      <p class="muted">Ön koşul: .NET SDK (hedef <code>net9.0</code>), Node.js LTS, SQL Server veya LocalDB.</p>
+
+      <h3>Backend kurulumu</h3>
+      <p><code>backend/DotnetStore.Api/appsettings.json</code> içinde <code>ConnectionStrings:DefaultConnection</code> değerini ortamınıza göre ayarlayın.</p>
+      <pre>cd backend/DotnetStore.Api
+dotnet run --launch-profile http</pre>
+      <p class="muted">API taban adresi: <code>http://localhost:5198</code>. Swagger: <code>http://localhost:5198/swagger</code> (Development).</p>
+
+      <h3>Frontend kurulumu</h3>
+      <pre>cd Frontend
+npm install
+npm run dev</pre>
+      <p class="muted">Vite çıktısındaki yerel URL’yi tarayıcıda açın; API vekili aynı makinede çalışan backend’e yönlendirilir.</p>
+
+      <h2 id="seeder">Örnek veri (seeder)</h2>
+      <p>Development’ta migrasyonlardan sonra <code>DatabaseSeeder</code> çalışır. Eksik <code>admin</code> kullanıcısı, temel kategoriler, özellikler ve isimleri sistemde olmayan örnek ürünler tamamlanır (idempotent).</p>
+      <p class="muted">Yerel deneme hesabı: kullanıcı <code>admin</code>, parola <code>admin123</code> — üretimde kullanılmamalıdır.</p>
+
+      <h2 id="dev">Geliştirme notları</h2>
+      <ul>
+        <li>Şema değişikliği: EF migrasyonları <code>db/StajDb/Migrations/</code> altında; <code>dotnet ef</code> komutları startup projesi olarak API ile çalıştırılmalıdır.</li>
+        <li>Eski şema çakışması: Development’ta belirli SQL hatalarında veritabanı silinip migrasyon yeniden uygulanabilir (<code>Program.cs</code>).</li>
+        <li>Hata yanıtları: Servis katmanı sonuçları <code>ToActionResult</code> ile HTTP kodlarına eşlenir.</li>
+      </ul>
+
+    </div>
+  </article>
+</body>
+</html>
