@@ -69,13 +69,14 @@ public class OrderRulesTests
         Assert.Equal(expected, OrderStatusHelper.ConsumesStock(s));
 
     [Theory]
-    [InlineData(100, 49.9)]
-    [InlineData(499.99, 49.9)]
-    [InlineData(500, 0)]
-    [InlineData(0, 0)]
-    public void Shipping_is_free_over_threshold(double subtotal, double expected)
+    [InlineData("100", "49.9")]
+    [InlineData("499.99", "49.9")]
+    [InlineData("500", "0")]
+    [InlineData("0", "0")]
+    public void Shipping_is_free_over_threshold(string subtotal, string expected)
     {
         var o = new StoreOptions { FreeShippingThreshold = 500m, ShippingFee = 49.9m };
-        Assert.Equal((decimal)expected, o.CalculateShipping((decimal)subtotal));
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        Assert.Equal(decimal.Parse(expected, inv), o.CalculateShipping(decimal.Parse(subtotal, inv)));
     }
 }
