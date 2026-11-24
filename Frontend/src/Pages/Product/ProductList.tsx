@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useConfirm } from '../../components/useConfirm';
 import { Link } from 'react-router-dom';
 import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
 import { AuthRoles } from '../../lib/authRoles';
@@ -74,8 +75,10 @@ const ProductList = () => {
     setApplied({ q, categoryId, minPrice, maxPrice });
   };
 
+  const { confirm, dialog } = useConfirm();
+
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`“${name}” ürününü silmek istediğinize emin misiniz?`)) return;
+    if (!(await confirm(`“${name}” ürününü silmek istediğinize emin misiniz?`))) return;
     try {
       const res = await apiFetch(`/api/Products/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -90,6 +93,7 @@ const ProductList = () => {
 
   return (
     <div>
+      {dialog}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h1 className="page-title h3 mb-0">Ürün listesi &amp; arama</h1>
         {canMutateProducts && (

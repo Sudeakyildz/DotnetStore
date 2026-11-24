@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useConfirm } from '../components/useConfirm';
 import { apiFetch, parseErrorMessage, readJson } from '../api/client';
 import type { OrderDetailDto, OrderListItemDto, UserListItemDto } from '../api/types';
-import { ORDER_STATUS_OPTIONS, OrderStatus } from '../lib/orderStatus';
+import { ORDER_STATUS_OPTIONS, OrderStatus, allowedStatusOptions } from '../lib/orderStatus';
 
 const formatDt = (iso: string) => {
   try {
@@ -31,8 +33,12 @@ const AdminOrders = () => {
   ]);
   const [createBusy, setCreateBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const { confirm, dialog } = useConfirm();
+  const [params, setParams] = useSearchParams();
+  const statusFilter = params.get('status') ?? '';
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const [res, ures] = await Promise.all([
@@ -60,6 +66,9 @@ const AdminOrders = () => {
 
   useEffect(() => {
     void load();
+    // Yeni müşteri siparişleri kendiliğinden görünsün
+    const t = window.setInterval(() => void load(true), 20000);
+    return () => window.clearInterval(t);
   }, [load]);
 
   const openDetail = async (id: number) => {
@@ -72,8 +81,15 @@ const AdminOrders = () => {
     setDetail(await readJson<OrderDetailDto>(res));
   };
 
-  const onStatusRowChange = async (o: OrderListItemDto, next: number) => {
+  const changeStatus = async (o: { id: number; status: number }, next: number) => {
     if (o.status === next) return;
+    if (next === OrderStatus.IptalEdildi) {
+      const ok = await confirm(
+        `Sipariş #${o.id} iptal edilsin mi? Stok geri eklenir ve ödeme müşteriye iade edilir.`,
+        { confirmLabel: 'Siparişi iptal et' },
+      );
+      if (!ok) return;
+    }
     setSavingId(o.id);
     setError(null);
     try {
@@ -85,23 +101,8 @@ const AdminOrders = () => {
         setError(await parseErrorMessage(res));
         return;
       }
-      setRows((prev) =>
-        prev
-          ? prev.map((r) =>
-              r.id === o.id
-                ? {
-                    ...r,
-                    status: next,
-                    statusLabel: ORDER_STATUS_OPTIONS.find((x) => x.value === next)?.label ?? r.statusLabel,
-                    updatedAt: new Date().toISOString(),
-                  }
-                : r
-            )
-          : prev
-      );
-      if (detail && detail.id === o.id) {
-        void openDetail(o.id);
-      }
+      await load(true);
+      if (detail && detail.id === o.id) await openDetail(o.id);
     } finally {
       setSavingId(null);
     }
@@ -162,20 +163,52 @@ const AdminOrders = () => {
     }
   };
 
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const o of rows ?? []) c[o.status] = (c[o.status] ?? 0) + 1;
+    return c;
+  }, [rows]);
+
+  const visible = (rows ?? []).filter((o) => !statusFilter || String(o.status) === statusFilter);
+  const tabs = [
+    { key: '', label: 'Tümü', count: rows?.length ?? 0 },
+    { key: String(OrderStatus.SiparisAlindi), label: 'Yeni', count: counts[OrderStatus.SiparisAlindi] ?? 0 },
+    { key: String(OrderStatus.KargoyaVerildi), label: 'Kargoda', count: counts[OrderStatus.KargoyaVerildi] ?? 0 },
+    { key: String(OrderStatus.TeslimEdildi), label: 'Teslim edildi', count: counts[OrderStatus.TeslimEdildi] ?? 0 },
+    { key: String(OrderStatus.IptalEdildi), label: 'İptal', count: counts[OrderStatus.IptalEdildi] ?? 0 },
+  ];
+
+  const nextOptions = (status: number) => allowedStatusOptions(status).filter((o) => o.value !== status);
+
   return (
     <div>
+      {dialog}
       <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-        <h1 className="h3 mb-0">Müşteri siparişleri (durum)</h1>
-        <button type="button" className="btn btn-sm btn-admin-primary" onClick={() => setFormOpen(true)}>
-          Yeni kayıt
-        </button>
+        <h1 className="h3 mb-0">Siparişler</h1>
+        <div className="d-flex gap-2">
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => void load()}>
+            Yenile
+          </button>
+          <button type="button" className="btn btn-sm btn-admin-primary" onClick={() => setFormOpen(true)}>
+            Manuel sipariş
+          </button>
+        </div>
       </div>
-      <p className="text-muted small mb-3">
-        Aşağıdaki aşamalar yalnız <strong>admin</strong> hesabıyla listelenir ve yönetilir. Durum, müşteri
-        (kullanıcı) adına ileri/geri sürülebilir. Bu panel harici, gerçek bir mağazada beğeniler ve sepet
-        ayrı servislerde olur; burada durum alanı, müşteriye atanan tüm aşamayı (beğeniden kargoya kadar) tek
-        hatta toplar.
-      </p>
+
+      <ul className="nav nav-pills mb-3 gap-1">
+        {tabs.map((t) => (
+          <li className="nav-item" key={t.key}>
+            <button
+              type="button"
+              className={`nav-link py-1 px-3 ${statusFilter === t.key ? 'active' : 'bg-white border'}`}
+              onClick={() => setParams(t.key ? { status: t.key } : {})}
+            >
+              {t.label} <span className="badge text-bg-light ms-1">{t.count}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
       {error && <div className="alert alert-danger py-2">{error}</div>}
 
       {formOpen && (
@@ -277,54 +310,50 @@ const AdminOrders = () => {
 
       {loading ? (
         <p className="text-muted">Yükleniyor…</p>
+      ) : visible.length === 0 ? (
+        <div className="card shadow-sm"><div className="card-body text-muted">Bu filtrede sipariş yok.</div></div>
       ) : (
         <div className="table-responsive card shadow-sm">
-          <table className="table table-sm table-striped mb-0 align-middle">
+          <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>Id</th>
+                <th>No</th>
                 <th>Müşteri</th>
-                <th>Durum (admin değiştirir)</th>
-                <th>Satır / tutar</th>
-                <th>Not</th>
+                <th>Tarih</th>
+                <th>Tutar</th>
+                <th>Ödeme</th>
+                <th>Durum</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {(rows ?? []).map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
+              {visible.map((o) => (
+                <tr key={o.id} className={o.status === OrderStatus.SiparisAlindi ? 'table-warning' : ''}>
+                  <td className="fw-semibold">#{o.id}</td>
                   <td>
-                    <div className="small">{o.customerEmail ?? '—'}</div>
-                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                      KullanıcıId: {o.customerUserId}
-                    </div>
+                    <div className="small">{o.customerName ?? '—'}</div>
+                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>{o.customerEmail ?? ''}</div>
                   </td>
-                  <td style={{ minWidth: 200 }}>
+                  <td className="small">{formatDt(o.createdAt)}</td>
+                  <td>
+                    {trMoney(o.total)}
+                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{o.itemCount} kalem</div>
+                  </td>
+                  <td className="small">{o.paymentStatusLabel || '—'}</td>
+                  <td style={{ minWidth: 190 }}>
                     <select
                       className="form-select form-select-sm"
                       disabled={savingId === o.id}
                       value={o.status}
-                      onChange={(e) => void onStatusRowChange(o, parseInt(e.target.value, 10))}
+                      onChange={(e) => void changeStatus(o, parseInt(e.target.value, 10))}
                     >
-                      {ORDER_STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
+                      {allowedStatusOptions(o.status).map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   </td>
-                  <td>
-                    {o.itemCount} sat · {trMoney(o.total)}
-                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>
-                      {formatDt(o.updatedAt)}
-                    </div>
-                  </td>
-                  <td className="small text-truncate" style={{ maxWidth: 140 }} title={o.note ?? undefined}>
-                    {o.note || '—'}
-                  </td>
-                  <td>
-                    <button type="button" className="btn btn-link btn-sm p-0" onClick={() => void openDetail(o.id)}>
+                  <td className="text-end">
+                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => void openDetail(o.id)}>
                       Detay
                     </button>
                   </td>
@@ -336,39 +365,102 @@ const AdminOrders = () => {
       )}
 
       {detail && (
-        <div className="mt-3 p-3 border rounded bg-body-secondary">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h2 className="h6 m-0">Sipariş #{detail.id} — {detail.statusLabel}</h2>
-            <button className="btn btn-sm btn-outline-dark" type="button" onClick={() => setDetail(null)}>
-              Kapat
-            </button>
-          </div>
-          <p className="small mb-2 text-muted">Toplam: {trMoney(detail.total)}</p>
-          <div className="table-responsive small">
-            <table className="table table-sm mb-0">
-              <thead>
-                <tr>
-                  <th>Ürün</th>
-                  <th>Adet</th>
-                  <th>Birim fiyat</th>
-                  <th>Toplam</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.items.map((it, k) => (
-                  <tr key={k}>
-                    <td>
-                      #{it.productId} {it.productName ? `· ${it.productName}` : ''}
-                    </td>
-                    <td>{it.quantity}</td>
-                    <td>{trMoney(it.unitPrice)}</td>
-                    <td>{trMoney(it.lineTotal)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 2600 }}
+            onClick={() => setDetail(null)}
+          />
+          <aside
+            role="dialog"
+            aria-label={`Sipariş #${detail.id} detayı`}
+            style={{
+              position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(520px, 100vw)', background: '#fff',
+              zIndex: 2700, boxShadow: '-8px 0 30px rgba(0,0,0,.2)', overflowY: 'auto',
+            }}
+          >
+            <div className="p-3 border-bottom d-flex justify-content-between align-items-start">
+              <div>
+                <h2 className="h5 m-0">Sipariş #{detail.id}</h2>
+                <div className="text-muted small">{formatDt(detail.createdAt)}</div>
+              </div>
+              <button className="btn-close" type="button" aria-label="Kapat" onClick={() => setDetail(null)} />
+            </div>
+
+            <div className="p-3">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="badge text-bg-primary fs-6">{detail.statusLabel}</span>
+                {detail.paymentStatusLabel && <span className="badge text-bg-light border">{detail.paymentStatusLabel}</span>}
+              </div>
+
+              {nextOptions(detail.status).length > 0 && (
+                <div className="mb-3">
+                  <div className="small text-muted mb-1">Durumu güncelle</div>
+                  <div className="d-flex flex-wrap gap-2">
+                    {nextOptions(detail.status).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={savingId === detail.id}
+                        className={`btn btn-sm ${opt.value === OrderStatus.IptalEdildi ? 'btn-outline-danger' : 'btn-admin-primary'}`}
+                        onClick={() => void changeStatus(detail, opt.value)}
+                      >
+                        {opt.value === OrderStatus.IptalEdildi ? 'İptal et & iade' : `→ ${opt.label}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <h3 className="h6">Müşteri</h3>
+              <p className="small mb-3">
+                {detail.customerName ?? '—'}<br />
+                <span className="text-muted">{detail.customerEmail}</span>
+              </p>
+
+              {detail.shippingAddress && (
+                <>
+                  <h3 className="h6">Teslimat</h3>
+                  <p className="small mb-3">
+                    {detail.shippingFullName} · {detail.shippingPhone}<br />
+                    {detail.shippingAddress}, {detail.shippingCity}
+                    {detail.trackingNumber && (<><br />Kargo takip no: <strong>{detail.trackingNumber}</strong></>)}
+                  </p>
+                </>
+              )}
+
+              {detail.note && (
+                <>
+                  <h3 className="h6">Sipariş notu</h3>
+                  <p className="small mb-3">{detail.note}</p>
+                </>
+              )}
+
+              <h3 className="h6">Ürünler</h3>
+              <table className="table table-sm small">
+                <thead>
+                  <tr><th>Ürün</th><th className="text-end">Adet</th><th className="text-end">Birim</th><th className="text-end">Toplam</th></tr>
+                </thead>
+                <tbody>
+                  {detail.items.map((it, k) => (
+                    <tr key={k}>
+                      <td>{it.productName ?? `#${it.productId}`}</td>
+                      <td className="text-end">{it.quantity}</td>
+                      <td className="text-end">{trMoney(it.unitPrice)}</td>
+                      <td className="text-end">{trMoney(it.lineTotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  {detail.shippingFee ? (
+                    <tr><td colSpan={3} className="text-end">Kargo</td><td className="text-end">{trMoney(detail.shippingFee)}</td></tr>
+                  ) : null}
+                  <tr className="fw-bold"><td colSpan={3} className="text-end">Genel toplam</td><td className="text-end">{trMoney(detail.total)}</td></tr>
+                </tfoot>
+              </table>
+              {detail.paymentCard && <div className="small text-muted">Ödeme: {detail.paymentCard}</div>}
+            </div>
+          </aside>
+        </>
       )}
     </div>
   );

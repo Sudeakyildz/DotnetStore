@@ -81,7 +81,33 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     headers.set('Content-Type', 'application/json');
   }
 
-  return fetch(apiUrl(path), { ...init, headers });
+  const res = await fetch(apiUrl(path), { ...init, headers });
+  if (res.status === 401 && token && typeof window !== 'undefined') {
+    // Süresi dolmuş / geçersiz oturum: temizle ve dinleyicilere haber ver.
+    setStoredToken(null);
+    window.dispatchEvent(new Event('auth:expired'));
+  }
+  return res;
+}
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** JSON döndüren istek; hata durumunda ApiError fırlatır (mesaj sunucudan gelir). */
+export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let res: Response;
+  try {
+    res = await apiFetch(path, init);
+  } catch {
+    throw new ApiError('Sunucuya bağlanılamadı. Lütfen daha sonra tekrar deneyin.', 0);
+  }
+  if (!res.ok) throw new ApiError(await parseErrorMessage(res), res.status);
+  return readJson<T>(res);
 }
 
 export async function readJson<T>(res: Response): Promise<T> {

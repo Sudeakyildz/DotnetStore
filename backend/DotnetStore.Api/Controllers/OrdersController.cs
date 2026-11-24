@@ -19,13 +19,19 @@ public class OrdersController : ControllerBase
     [HttpGet]
     [Authorize(Roles = AuthRoles.Admin)]
     public async Task<ActionResult<IReadOnlyList<OrderListItemDto>>> List(CancellationToken ct) =>
-        Ok(await _orders.ListAsync(ct));
+        Ok(await _orders.ListAsync(null, ct));
+
+    /// <summary>Admin paneli bildirimleri: bekleyen sipariş sayısı ve son siparişler.</summary>
+    [HttpGet("summary")]
+    [Authorize(Roles = AuthRoles.Admin)]
+    public async Task<ActionResult<OrderSummaryDto>> Summary(CancellationToken ct) =>
+        Ok(await _orders.SummaryAsync(ct));
 
     [HttpGet("{id:int}")]
     [Authorize(Roles = AuthRoles.Admin)]
     public async Task<ActionResult<OrderDetailDto>> GetById(int id, CancellationToken ct)
     {
-        var o = await _orders.GetByIdAsync(id, ct);
+        var o = await _orders.GetByIdAsync(id, null, ct);
         if (o is null) return NotFound();
         return Ok(o);
     }

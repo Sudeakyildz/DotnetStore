@@ -16,4 +16,4 @@ Start-Process powershell -ArgumentList @(
     "Set-Location '$root\Frontend'; Write-Host 'Panel: http://localhost:5173' -ForegroundColor Green; npm run dev"
 )
 
-Write-Host "Tarayici: http://localhost:5173  |  Giris: admin / admin123" -ForegroundColor Yellow
+Write-Host "Magaza: http://localhost:5173  |  Yonetim: http://localhost:5173/yonetim (admin@dotnetstore.local / Admin123!)" -ForegroundColor Yellow

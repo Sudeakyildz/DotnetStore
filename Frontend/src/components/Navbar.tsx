@@ -1,21 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { apiFetch, getStoredAuthProfile, setStoredToken } from '../api/client';
+import { getStoredAuthProfile } from '../api/client';
+import { useShop } from '../shop/ShopContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { signOut } = useShop();
   const profile = getStoredAuthProfile();
 
   const handleLogout = () => {
-    void (async () => {
-      try {
-        await apiFetch('/api/Auth/logout', { method: 'POST' });
-      } catch {
-        /* yine de oturumu kapat */
-      } finally {
-        setStoredToken(null);
-        navigate('/');
-      }
-    })();
+    void signOut().then(() => navigate('/yonetim'));
   };
 
   return (
@@ -23,7 +16,7 @@ const Navbar = () => {
       <div className="container-fluid">
         <div className="d-flex flex-column py-1">
           <Link className="navbar-brand fw-semibold p-0" to="/dashboard">
-            Staj Store
+            DotnetStore
           </Link>
           <span className="navbar-tagline d-none d-sm-block">Operasyon &amp; katalog</span>
         </div>
@@ -35,6 +28,9 @@ const Navbar = () => {
           )}
           <Link className="btn btn-outline-light btn-sm rounded-pill px-3" to="/dashboard">
             Özet
+          </Link>
+          <Link className="btn btn-outline-light btn-sm rounded-pill px-3" to="/">
+            Mağazayı gör
           </Link>
           <button
             type="button"

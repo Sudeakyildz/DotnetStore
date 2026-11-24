@@ -382,6 +382,10 @@ public static class DatabaseSeeder
             if (!Enum.TryParse<UserRole>(roleStr, ignoreCase: true, out var role))
                 continue;
 
+            // Kullanıcı adı benzersiz: başka bir hesapta kullanılıyorsa e-posta önekiyle ayır.
+            if (await db.Users.AnyAsync(u => u.UserName == userName && u.Email != email, ct))
+                userName = $"{userName} ({email.Split('@')[0]})";
+
             var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
             if (existing is null)
             {

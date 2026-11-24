@@ -107,6 +107,10 @@ export type OrderListItemDto = {
   createdAt: string;
   updatedAt: string;
   note: string | null;
+  paymentStatus?: number;
+  paymentStatusLabel?: string;
+  itemsPreview?: string | null;
+  firstImageUrl?: string | null;
 };
 
 export type OrderItemRowDto = {
@@ -115,6 +119,7 @@ export type OrderItemRowDto = {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  imageUrl?: string | null;
 };
 
 export type OrderDetailDto = {
@@ -130,5 +135,14 @@ export type OrderDetailDto = {
   createdByUserId: number | null;
   updatedByUserId: number | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string;  shippingFullName?: string | null;
+  shippingPhone?: string | null;
+  shippingCity?: string | null;
+  shippingAddress?: string | null;
+  shippingFee?: number;
+  paymentStatus?: number;
+  paymentStatusLabel?: string;
+  trackingNumber?: string | null;
+  paymentCard?: string | null;
+  canCancel?: boolean;
 };

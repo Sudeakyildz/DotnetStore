@@ -5,7 +5,7 @@ import { AuthRoles } from '../lib/authRoles';
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `nav-link px-3 py-2 ${isActive ? 'active' : 'text-white-50'}`;
 
-const Sidebar = () => {
+const Sidebar = ({ pendingOrders = 0 }: { pendingOrders?: number }) => {
   const auth = getStoredAuthProfile();
   const role = auth?.role ?? '';
 
@@ -22,7 +22,7 @@ const Sidebar = () => {
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark">S</div>
         <div>
-          <div className="sidebar-brand-title">Staj Store</div>
+          <div className="sidebar-brand-title">DotnetStore</div>
           <div className="sidebar-brand-sub">Yönetim paneli</div>
         </div>
       </div>
@@ -46,11 +46,43 @@ const Sidebar = () => {
                 <NavLink to="/admin/activity" className={linkClass}>
                   İşlem kayıtları
                 </NavLink>
-                <NavLink to="/admin/orders" className={linkClass}>
-                  Müşteri siparişleri
-                </NavLink>
               </>
             )}
+          </>
+        )}
+
+        {showUsers && (
+          <>
+            <hr className="border-secondary border-opacity-25 my-2" />
+            <small
+              className="text-secondary text-uppercase px-3 mb-1"
+              style={{ fontSize: '0.65rem', letterSpacing: '0.12em' }}
+            >
+              Siparişler
+            </small>
+            <NavLink
+              to="/admin/orders"
+              className={() =>
+                `nav-link px-3 py-2 ${
+                  window.location.pathname === '/admin/orders' && !window.location.search.includes('status=')
+                    ? 'active'
+                    : 'text-white-50'
+                }`
+              }
+            >
+              Tüm siparişler
+            </NavLink>
+            <NavLink
+              to="/admin/orders?status=3"
+              className={() =>
+                `nav-link px-3 py-2 d-flex justify-content-between align-items-center ${
+                  window.location.search.includes('status=3') ? 'active' : 'text-white-50'
+                }`
+              }
+            >
+              Yeni siparişler
+              {pendingOrders > 0 && <span className="badge text-bg-danger rounded-pill">{pendingOrders}</span>}
+            </NavLink>
           </>
         )}
 

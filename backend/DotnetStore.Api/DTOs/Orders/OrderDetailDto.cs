@@ -5,7 +5,8 @@ public sealed record OrderItemRowDto(
     string? ProductName,
     int Quantity,
     decimal UnitPrice,
-    decimal LineTotal
+    decimal LineTotal,
+    string? ImageUrl = null
 );
 
 public sealed record OrderDetailDto(
@@ -21,5 +22,15 @@ public sealed record OrderDetailDto(
     int? CreatedByUserId,
     int? UpdatedByUserId,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    string? ShippingFullName = null,
+    string? ShippingPhone = null,
+    string? ShippingCity = null,
+    string? ShippingAddress = null,
+    decimal ShippingFee = 0m,
+    int PaymentStatus = 0,
+    string PaymentStatusLabel = "",
+    string? TrackingNumber = null,
+    string? PaymentCard = null,
+    bool CanCancel = false
 );

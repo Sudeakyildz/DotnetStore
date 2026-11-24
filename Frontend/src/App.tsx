@@ -3,7 +3,21 @@ import AdminLayout from './components/AdminLayout';
 import RequireAuth from './components/RequireAuth';
 import RequireRole from './components/RequireRole';
 import Login from './Pages/Login';
-import Register from './Pages/Register';
+import { ShopProvider } from './shop/ShopContext';
+import ShopLayout from './shop/ShopLayout';
+import Home from './shop/pages/Home';
+import Catalog from './shop/pages/Catalog';
+import ProductPage from './shop/pages/ProductPage';
+import CartPage from './shop/pages/CartPage';
+import CheckoutPage from './shop/pages/CheckoutPage';
+import { OrderDetail, OrderList } from './shop/pages/OrdersPage';
+import {
+  AccountPage,
+  FavoritesPage,
+  RequireCustomer,
+  ShopLogin,
+  ShopRegister,
+} from './shop/pages/AccountPages';
 import Dashboard from './Pages/Dashboard';
 import KvkkNotice from './Pages/KvkkNotice';
 import AdminUsers from './Pages/AdminUsers';
@@ -23,10 +37,25 @@ import { AuthRoles } from './lib/authRoles';
 function App() {
   return (
     <BrowserRouter>
+      <ShopProvider>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/yonetim" element={<Login />} />
         <Route path="/kvkk" element={<KvkkNotice />} />
+        <Route element={<ShopLayout />}>
+          <Route index element={<Home />} />
+          <Route path="urunler" element={<Catalog />} />
+          <Route path="urun/:id" element={<ProductPage />} />
+          <Route path="sepet" element={<CartPage />} />
+          <Route path="giris" element={<ShopLogin />} />
+          <Route path="kayit" element={<ShopRegister />} />
+          <Route element={<RequireCustomer />}>
+            <Route path="odeme" element={<CheckoutPage />} />
+            <Route path="favoriler" element={<FavoritesPage />} />
+            <Route path="hesabim" element={<AccountPage />} />
+            <Route path="hesabim/siparisler" element={<OrderList />} />
+            <Route path="hesabim/siparisler/:id" element={<OrderDetail />} />
+          </Route>
+        </Route>
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
@@ -109,6 +138,7 @@ function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ShopProvider>
     </BrowserRouter>
   );
 }

@@ -64,7 +64,7 @@ public sealed class AuthService : IAuthService
         {
             UserName = username,
             Email = email,
-            Role = UserRole.StaffCategories,
+            Role = UserRole.Musteri,
             PasswordHash = "",
             CreatedAt = now,
             UpdatedAt = now,
@@ -127,6 +127,26 @@ public sealed class AuthService : IAuthService
             user.FirstLoginAt,
             user.LastLoginAt,
             user.CreatedAt));
+    }
+
+    public async Task<AppResult<Unit>> ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken ct)
+    {
+        var id = _currentUser.UserId;
+        if (id is null)
+            return AppResult<Unit>.Fail("Oturum yok.", 401);
+        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 8)
+            return AppResult<Unit>.Fail("Yeni şifre en az 8 karakter olmalı.", 400);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id.Value, ct);
+        if (user is null)
+            return AppResult<Unit>.Fail("Kullanıcı bulunamadı.", 404);
+        if (_hasher.VerifyHashedPassword(user, user.PasswordHash, currentPassword) == PasswordVerificationResult.Failed)
+            return AppResult<Unit>.Fail("Mevcut şifre hatalı.", 400);
+
+        user.PasswordHash = _hasher.HashPassword(user, newPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return AppResult<Unit>.Ok(Unit.Value);
     }
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();

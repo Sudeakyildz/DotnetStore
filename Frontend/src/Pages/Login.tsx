@@ -2,18 +2,21 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   apiFetch,
+  getStoredAuthProfile,
   getStoredToken,
   readJson,
-  setStoredAuthProfile,
-  setStoredToken,
   parseErrorMessage,
 } from '../api/client';
 import type { LoginResponse } from '../api/types';
+import { useShop } from '../shop/ShopContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn } = useShop();
   useEffect(() => {
-    if (getStoredToken()) navigate('/dashboard', { replace: true });
+    if (getStoredToken()) {
+      navigate(getStoredAuthProfile()?.role === 'Musteri' ? '/' : '/dashboard', { replace: true });
+    }
   }, [navigate]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,9 +42,8 @@ const Login = () => {
         return;
       }
       const data = await readJson<LoginResponse>(res);
-      setStoredToken(data.accessToken);
-      setStoredAuthProfile({ email: data.email, userName: data.userName, role: data.role });
-      navigate('/dashboard');
+      await signIn(data);
+      navigate(data.role === 'Musteri' ? '/' : '/dashboard');
     } catch {
       setError('Sunucuya bağlanılamadı. API çalışıyor mu?');
     } finally {
@@ -53,9 +55,9 @@ const Login = () => {
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="card shadow" style={{ width: '100%', maxWidth: '420px' }}>
         <div className="card-body p-4">
-          <h1 className="h4 mb-2 text-center">Yönetici girişi</h1>
+          <h1 className="h4 mb-2 text-center">Yönetim paneli girişi</h1>
           <p className="small text-muted text-center mb-3">
-            Hesabınız size atanmış e-posta ve şifre ile giriş yapın. Herkese açık kayıt kapalıdır.
+            Hesabınız size atanmış e-posta ve şifre ile giriş yapın. Müşteri iseniz mağaza girişini kullanın.
           </p>
           {error && <div className="alert alert-danger py-2 small">{error}</div>}
           <form onSubmit={handleSubmit}>
@@ -99,6 +101,9 @@ const Login = () => {
             <button type="submit" className="btn btn-primary w-100" disabled={loading}>
               {loading ? 'Giriş…' : 'Giriş yap'}
             </button>
+            <div className="text-center mt-3 small">
+              <Link to="/">← Mağazaya dön</Link>
+            </div>
           </form>
         </div>
       </div>

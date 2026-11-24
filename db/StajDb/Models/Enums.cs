@@ -43,3 +43,12 @@ public enum OrderStatus
     TeslimEdildi = 5,
     IptalEdildi = 6,
 }
+
+public enum PaymentStatus
+{
+    /// <summary>Henüz ödeme alınmadı (ör. admin tarafından açılan manuel sipariş).</summary>
+    Pending = 0,
+    Paid = 1,
+    Failed = 2,
+    Refunded = 3,
+}

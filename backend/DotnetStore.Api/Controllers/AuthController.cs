@@ -3,6 +3,7 @@ using DotnetStore.Api.Helpers;
 using DotnetStore.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DotnetStore.Api.Controllers;
 
@@ -17,17 +18,19 @@ public class AuthController : ControllerBase
         _auth = auth;
     }
 
+    /// <summary>Mağaza müşterisi kaydı (rol her zaman Musteri).</summary>
     [HttpPost("register")]
     [AllowAnonymous]
-    public IActionResult RegisterDisabled()
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest body, CancellationToken ct)
     {
-        return StatusCode(
-            StatusCodes.Status403Forbidden,
-            new { message = "Herkese açık kayıt kapalıdır. Size atanmış yönetici hesabı ile giriş yapın." });
+        var r = await _auth.RegisterAsync(body, ct);
+        return r.ToActionResult(this, d => Ok(d));
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken ct)
     {
         var r = await _auth.LoginAsync(body, ct);
@@ -48,5 +51,13 @@ public class AuthController : ControllerBase
     {
         var r = await _auth.GetMeAsync(ct);
         return r.ToActionResult(this, d => Ok(d));
+    }
+
+    [HttpPut("password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] DotnetStore.Api.DTOs.Store.ChangePasswordRequest body, CancellationToken ct)
+    {
+        var r = await _auth.ChangePasswordAsync(body.CurrentPassword, body.NewPassword, ct);
+        return r.ToActionResult(this);
     }
 }

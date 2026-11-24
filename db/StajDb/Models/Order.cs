@@ -11,6 +11,18 @@ public class Order
 
     public string? Note { get; set; }
 
+    // Teslimat bilgisi (mağaza siparişlerinde dolu)
+    public string? ShippingFullName { get; set; }
+    public string? ShippingPhone { get; set; }
+    public string? ShippingCity { get; set; }
+    public string? ShippingAddress { get; set; }
+
+    public decimal ShippingFee { get; set; }
+    public PaymentStatus PaymentStatus { get; set; }
+    public string? TrackingNumber { get; set; }
+
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
     public int? CreatedByUserId { get; set; }
     public StoreUser? CreatedByUser { get; set; }
 

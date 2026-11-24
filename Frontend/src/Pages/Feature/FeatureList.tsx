@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useConfirm } from '../../components/useConfirm';
 import { Link } from 'react-router-dom';
 import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
 import { AuthRoles } from '../../lib/authRoles';
@@ -34,8 +35,10 @@ const FeatureList = () => {
     void load();
   }, [load]);
 
+  const { confirm, dialog } = useConfirm();
+
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`“${name}” özelliğini silmek istediğinize emin misiniz?`)) return;
+    if (!(await confirm(`“${name}” özelliğini silmek istediğinize emin misiniz?`))) return;
     try {
       const res = await apiFetch(`/api/Features/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -54,6 +57,7 @@ const FeatureList = () => {
 
   return (
     <div>
+      {dialog}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="h3 mb-0">Ürün özellikleri</h1>
         {canEdit && (

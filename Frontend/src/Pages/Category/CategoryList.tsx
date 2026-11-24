@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useConfirm } from '../../components/useConfirm';
 import { Link } from 'react-router-dom';
 import { apiFetch, readJson, parseErrorMessage, getStoredAuthProfile } from '../../api/client';
 import { AuthRoles } from '../../lib/authRoles';
@@ -47,8 +48,10 @@ const CategoryList = () => {
 
   const sorted = useMemo(() => [...items].sort((a, b) => a.name.localeCompare(b.name, 'tr')), [items]);
 
+  const { confirm, dialog } = useConfirm();
+
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`“${name}” grubunu silmek istediğinize emin misiniz?`)) return;
+    if (!(await confirm(`“${name}” grubunu silmek istediğinize emin misiniz?`))) return;
     try {
       const res = await apiFetch(`/api/Categories/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -64,6 +67,7 @@ const CategoryList = () => {
   if (loading) {
     return (
       <div className="category-page">
+        {dialog}
         <div className="skeleton-line mb-3" style={{ maxWidth: '280px' }} />
         <div className="skeleton-line skeleton-line--tall" />
       </div>

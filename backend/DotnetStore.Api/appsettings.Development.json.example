@@ -5,16 +5,15 @@
       "Microsoft.AspNetCore": "Warning"
     }
   },
+  "Jwt": {
+    "SigningKey": "DotnetStore-DEV-ONLY-SigningKey-change-me-0123456789"
+  },
   "Seed": {
-    "AdminEmail": "ornek@email.com",
-    "AdminPassword": "GUVENLI_SIFRE",
     "Users": [
-      {
-        "Email": "ornek@email.com",
-        "UserName": "Yönetici",
-        "Password": "GUVENLI_SIFRE",
-        "Role": "Admin"
-      }
+      { "Email": "admin@dotnetstore.local", "UserName": "Yönetici", "Password": "Admin123!", "Role": "Admin" },
+      { "Email": "fiyat@dotnetstore.local", "UserName": "Fiyat Sorumlusu", "Password": "Fiyat123!", "Role": "StaffPrices" },
+      { "Email": "ozellik@dotnetstore.local", "UserName": "Özellik Sorumlusu", "Password": "Ozellik123!", "Role": "StaffFeatures" },
+      { "Email": "kategori@dotnetstore.local", "UserName": "Kategori Sorumlusu", "Password": "Kategori123!", "Role": "StaffCategories" }
     ]
   }
 }

@@ -22,6 +22,9 @@ jobs:
           dotnet restore StajProje.sln
           dotnet build StajProje.sln -c Release --no-restore
 
+      - name: Test
+        run: dotnet test StajProje.sln -c Release --no-build
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

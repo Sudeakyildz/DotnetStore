@@ -32,7 +32,11 @@ const RequireAuth = () => {
   }, [token]);
 
   if (!token) {
-    return <Navigate to="/" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/yonetim" replace state={{ from: location.pathname }} />;
+  }
+  // Müşteri hesapları yönetim paneline giremez.
+  if (getStoredAuthProfile()?.role === 'Musteri') {
+    return <Navigate to="/" replace />;
   }
   return <Outlet />;
 };

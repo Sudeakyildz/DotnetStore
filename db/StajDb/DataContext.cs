@@ -18,6 +18,31 @@ public class DataContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<FavoriteProduct> Favorites => Set<FavoriteProduct>();
+
+    /// <summary>
+    /// SQL Server datetime2 değerleri Kind=Unspecified döner; JSON'da "Z" olmadan gidip tarayıcıda yerel saat sanılır.
+    /// Tüm tarihler UTC olarak saklandığı için okurken Kind=Utc işaretlenir (şema değişmez).
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
+
+    private sealed class UtcDateTimeConverter : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>
+    {
+        public UtcDateTimeConverter()
+            : base(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc)) { }
+    }
+
+    private sealed class NullableUtcDateTimeConverter : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime?, DateTime?>
+    {
+        public NullableUtcDateTimeConverter()
+            : base(v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v) { }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -189,6 +214,13 @@ public class DataContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Status).HasConversion<int>().IsRequired();
             entity.Property(e => e.Note).HasMaxLength(2000);
+            entity.Property(e => e.ShippingFullName).HasMaxLength(150);
+            entity.Property(e => e.ShippingPhone).HasMaxLength(30);
+            entity.Property(e => e.ShippingCity).HasMaxLength(100);
+            entity.Property(e => e.ShippingAddress).HasMaxLength(500);
+            entity.Property(e => e.ShippingFee).HasPrecision(18, 2);
+            entity.Property(e => e.PaymentStatus).HasConversion<int>().IsRequired();
+            entity.Property(e => e.TrackingNumber).HasMaxLength(60);
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
             entity.HasIndex(e => e.CustomerUserId);
@@ -227,6 +259,54 @@ public class DataContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.ToTable("Payments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.Status).HasConversion<int>().IsRequired();
+            entity.Property(e => e.TransactionId).HasMaxLength(100);
+            entity.Property(e => e.CardBrand).HasMaxLength(30);
+            entity.Property(e => e.CardLast4).HasMaxLength(4);
+            entity.Property(e => e.FailureReason).HasMaxLength(300);
+            entity.HasIndex(e => e.OrderId);
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Payments)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.ToTable("CartItems");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ProductId }).IsUnique();
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FavoriteProduct>(entity =>
+        {
+            entity.ToTable("Favorites");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ProductId }).IsUnique();
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

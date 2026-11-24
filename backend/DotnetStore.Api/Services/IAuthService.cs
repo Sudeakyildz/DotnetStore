@@ -9,4 +9,5 @@ public interface IAuthService
     Task<AppResult<LoginResponse>> LoginAsync(LoginRequest dto, CancellationToken ct);
     Task<AppResult<Unit>> LogoutAsync(CancellationToken ct);
     Task<AppResult<MeResponse>> GetMeAsync(CancellationToken ct);
+    Task<AppResult<Unit>> ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken ct);
 }
